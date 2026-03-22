@@ -158,21 +158,29 @@ export default function TournamentsPage() {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        justifyContent="space-between"
+        alignItems={{ xs: 'stretch', sm: 'center' }}
+        spacing={2}
+        sx={{ mb: 4 }}
+      >
+        <Stack direction="row" alignItems="center" spacing={2}>
           <Button
             variant="outlined"
             startIcon={<HomeIcon />}
             onClick={() => router.push('/dashboard')}
-            sx={{ minWidth: '120px' }}
+            size={{ xs: 'small', sm: 'medium' }}
           >
             Dashboard
           </Button>
-          <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant={{ xs: 'h5', sm: 'h4' }} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <EmojiEventsIcon fontSize="large" color="primary" />
-            Tournaments
+            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+              Tournaments
+            </Box>
           </Typography>
-        </Box>
+        </Stack>
         {user.isAdmin && (
           <Button
             variant="contained"
@@ -181,11 +189,12 @@ export default function TournamentsPage() {
               setSelectedTournament(null);
               setTournamentDialogOpen(true);
             }}
+            fullWidth={{ xs: true, sm: false }}
           >
             Create Tournament
           </Button>
         )}
-      </Box>
+      </Stack>
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
@@ -203,14 +212,22 @@ export default function TournamentsPage() {
             <Grid size={{ xs: 12, md: 6 }} key={tournament.id}>
               <Card>
                 <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 2 }}>
-                    <Typography variant="h6">{tournament.name}</Typography>
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    justifyContent="space-between"
+                    alignItems={{ xs: 'start', sm: 'center' }}
+                    spacing={1}
+                    sx={{ mb: 2 }}
+                  >
+                    <Typography variant="h6" sx={{ wordBreak: 'break-word' }}>
+                      {tournament.name}
+                    </Typography>
                     <Chip
                       label={tournament.status}
                       color={getStatusColor(tournament.status) as any}
                       size="small"
                     />
-                  </Box>
+                  </Stack>
 
                   {tournament.description && (
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -265,11 +282,12 @@ export default function TournamentsPage() {
                     </Box>
                   )}
                 </CardContent>
-                <CardActions sx={{ justifyContent: 'space-between', px: 2 }}>
-                  <Box>
+                <CardActions sx={{ flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', px: 2, gap: 1 }}>
+                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ width: { xs: '100%', sm: 'auto' } }}>
                     <Button
                       size="small"
                       onClick={() => setViewingLeaderboard(tournament.id)}
+                      fullWidth={{ xs: true, sm: false }}
                     >
                       View Standings
                     </Button>
@@ -278,13 +296,14 @@ export default function TournamentsPage() {
                         size="small"
                         startIcon={<GroupsIcon />}
                         onClick={() => handleCreateGroup(tournament.id)}
+                        fullWidth={{ xs: true, sm: false }}
                       >
                         Add Group
                       </Button>
                     )}
-                  </Box>
+                  </Stack>
                   {user.isAdmin && (
-                    <Box>
+                    <Stack direction="row" spacing={1}>
                       <IconButton
                         size="small"
                         onClick={() => {
@@ -301,7 +320,7 @@ export default function TournamentsPage() {
                       >
                         <DeleteIcon />
                       </IconButton>
-                    </Box>
+                    </Stack>
                   )}
                 </CardActions>
               </Card>
