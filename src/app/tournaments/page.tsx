@@ -170,11 +170,29 @@ export default function TournamentsPage() {
             variant="outlined"
             startIcon={<HomeIcon />}
             onClick={() => router.push('/dashboard')}
-            size={{ xs: 'small', sm: 'medium' }}
+            size="small"
+            sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
           >
             Dashboard
           </Button>
-          <Typography variant={{ xs: 'h5', sm: 'h4' }} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Button
+            variant="outlined"
+            startIcon={<HomeIcon />}
+            onClick={() => router.push('/dashboard')}
+            size="small"
+            sx={{ display: { xs: 'inline-flex', sm: 'none' } }}
+          >
+            Home
+          </Button>
+          <Typography 
+            variant="h5" 
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1,
+              fontSize: { xs: '1.25rem', sm: '1.5rem' }
+            }}
+          >
             <EmojiEventsIcon fontSize="large" color="primary" />
             <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
               Tournaments
@@ -189,7 +207,7 @@ export default function TournamentsPage() {
               setSelectedTournament(null);
               setTournamentDialogOpen(true);
             }}
-            fullWidth={{ xs: true, sm: false }}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
           >
             Create Tournament
           </Button>
@@ -287,7 +305,7 @@ export default function TournamentsPage() {
                     <Button
                       size="small"
                       onClick={() => setViewingLeaderboard(tournament.id)}
-                      fullWidth={{ xs: true, sm: false }}
+                      sx={{ width: { xs: '100%', sm: 'auto' } }}
                     >
                       View Standings
                     </Button>
@@ -296,7 +314,7 @@ export default function TournamentsPage() {
                         size="small"
                         startIcon={<GroupsIcon />}
                         onClick={() => handleCreateGroup(tournament.id)}
-                        fullWidth={{ xs: true, sm: false }}
+                        sx={{ width: { xs: '100%', sm: 'auto' } }}
                       >
                         Add Group
                       </Button>

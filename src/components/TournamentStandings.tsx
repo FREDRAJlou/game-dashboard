@@ -167,14 +167,25 @@ export default function TournamentStandings({ tournamentId }: TournamentStanding
 
   return (
     <Paper elevation={2}>
-      <Box sx={{ p: 3 }}>
-        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
-          <EmojiEvents color="primary" />
-          <Typography variant="h5" component="h2">
-            {data.tournament.name} - Standings
-          </Typography>
+      <Box sx={{ p: { xs: 2, sm: 3 } }}>
+        <Stack 
+          direction={{ xs: 'column', sm: 'row' }} 
+          alignItems={{ xs: 'start', sm: 'center' }} 
+          spacing={2} 
+          sx={{ mb: 3 }}
+        >
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <EmojiEvents color="primary" />
+            <Typography 
+              variant="h5" 
+              component="h2"
+              sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}
+            >
+              {data.tournament.name}
+            </Typography>
+          </Stack>
           <Chip 
-            label={`${data.totalMatches} match${data.totalMatches !== 1 ? 'es' : ''} completed`} 
+            label={`${data.totalMatches} match${data.totalMatches !== 1 ? 'es' : ''}`} 
             size="small" 
             color="success"
           />
@@ -183,7 +194,12 @@ export default function TournamentStandings({ tournamentId }: TournamentStanding
         {/* Group Leaderboard - IPL Style */}
         {data.groupStandings.length > 1 && (
           <Box sx={{ mb: 4 }}>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+            <Stack 
+              direction={{ xs: 'column', sm: 'row' }} 
+              alignItems={{ xs: 'start', sm: 'center' }} 
+              justifyContent="space-between" 
+              sx={{ mb: 2 }}
+            >
               <Typography variant="h6" sx={{ fontWeight: 600 }}>
                 Group Leaderboard
               </Typography>
