@@ -180,6 +180,4 @@ export default function Header() {
     </>
   );
 }
-  );
-}
 
