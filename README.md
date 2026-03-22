@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎮 Game Dashboard
 
-## Getting Started
+Tournament and match management system for table tennis with real-time scoring and analytics.
 
-First, run the development server:
+## Features
+
+- 🏆 Tournament Management (Singles/Doubles)
+- 🎯 Live Match Scoring with Individual Player Stats
+- 📊 Player & Team Statistics
+- 👥 Group Management with Color Coding
+- 📈 Performance Analytics & Charts
+
+## Quick Start
 
 ```bash
+npm install
+npx prisma generate
+npx prisma migrate dev
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit: http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Vercel Deployment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 1. Choose Database
 
-## Learn More
+**Vercel Postgres** (Recommended)
+```bash
+vercel postgres create game-dashboard-db
+```
 
-To learn more about Next.js, take a look at the following resources:
+**Turso** (SQLite Edge - Easiest)
+```bash
+turso db create game-dashboard
+turso db show game-dashboard --url
+turso db tokens create game-dashboard
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 2. Update Schema (PostgreSQL only)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+In `prisma/schema.prisma` change:
+```prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+```
 
-## Deploy on Vercel
+### 3. Deploy
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+vercel --prod
+npx prisma migrate deploy
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 4. Create Admin
+
+Use Prisma Studio or database GUI:
+```bash
+npx prisma studio
+```
+
+Create user:
+- name: "Admin"
+- email: "your@email.com"
+- password: "secure-password"
+- isAdmin: true
+
+## Tech Stack
+
+- Next.js 16.2 + App Router
+- Prisma ORM (SQLite dev / PostgreSQL prod)
+- Material-UI v7
+- Chart.js + react-chartjs-2
+- TypeScript
+
+## Environment Variables
+
+```bash
+# Development (SQLite)
+DATABASE_URL="file:./dev.db"
+
+# Production (PostgreSQL)
+DATABASE_URL="postgresql://..."
+
+# Production (Turso)
+DATABASE_URL="libsql://..."
+DATABASE_AUTH_TOKEN="..."
+```
+
+## License
+
+MIT

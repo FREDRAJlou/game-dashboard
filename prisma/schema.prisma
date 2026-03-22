@@ -1,0 +1,251 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum MatchType {
+  SINGLES
+  DOUBLES
+}
+
+enum MatchStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum MatchStage {
+  GROUP_STAGE
+  QUARTER_FINAL
+  SEMI_FINAL
+  FINAL
+}
+
+enum TournamentStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+model User {
+  id              Int          @id @default(autoincrement())
+  username        String       @unique
+  password        String
+  isAdmin         Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+  playerProfile   Player?
+  createdMatches  Match[]      @relation("ScheduledBy")
+  tournaments     Tournament[]
+}
+
+model Player {
+  id           Int                 @id @default(autoincrement())
+  name         String              @unique
+  userId       Int?                @unique
+  isActive     Boolean             @default(true)
+  createdAt    DateTime            @default(now())
+  user         User?               @relation(fields: [userId], references: [id])
+  matchPlayers MatchPlayer[]
+  teams        TeamPlayer[]
+  groupMembers GroupMember[]
+  performances MatchPerformance[]
+}
+
+model Team {
+  id                    Int                @id @default(autoincrement())
+  name                  String             @unique
+  tournamentId          Int?                                 // Which doubles tournament this team belongs to
+  createdAt             DateTime           @default(now())
+  qualifiedForSemis     Boolean            @default(false)  // Track qualification for playoffs
+  qualificationRank     Int?                                 // Final rank in group (1, 2, etc.)
+  players               TeamPlayer[]
+  matchesAsTeam1        Match[]            @relation("Team1")
+  matchesAsTeam2        Match[]            @relation("Team2")
+  performances          TeamPerformance[]
+  tournament            Tournament?        @relation(fields: [tournamentId], references: [id])
+  
+  @@index([tournamentId])
+}
+
+model TeamPlayer {
+  id       Int    @id @default(autoincrement())
+  teamId   Int
+  playerId Int
+  team     Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, playerId])
+}
+
+model Match {
+  id               Int                  @id @default(autoincrement())
+  tournamentId     Int?
+  group1Id         Int?
+  group2Id         Int?
+  scheduledAt      DateTime
+  type             MatchType
+  status           MatchStatus          @default(SCHEDULED)
+  stage            MatchStage           @default(GROUP_STAGE)
+  
+  // For doubles matches - reference to teams
+  team1Id          Int?
+  team2Id          Int?
+  
+  team1Score       Int?
+  team2Score       Int?
+  winnerTeam       Int?                 // 1 or 2
+  winnerGroupId    Int?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  notes            String?
+  scheduledById    Int
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  
+  tournament       Tournament?          @relation(fields: [tournamentId], references: [id])
+  group1           Group?               @relation("MatchGroup1", fields: [group1Id], references: [id])
+  group2           Group?               @relation("MatchGroup2", fields: [group2Id], references: [id])
+  winnerGroup      Group?               @relation("MatchWinner", fields: [winnerGroupId], references: [id])
+  scheduledBy      User                 @relation("ScheduledBy", fields: [scheduledById], references: [id])
+  team1            Team?                @relation("Team1", fields: [team1Id], references: [id])
+  team2            Team?                @relation("Team2", fields: [team2Id], references: [id])
+  players          MatchPlayer[]
+  performances     MatchPerformance[]
+  teamPerformances TeamPerformance[]
+  
+  @@index([tournamentId])
+  @@index([group1Id])
+  @@index([group2Id])
+  @@index([status])
+}
+
+model MatchPlayer {
+  id       Int    @id @default(autoincrement())
+  matchId  Int
+  playerId Int
+  teamSide Int    // 1 or 2 (which team in this match)
+  position Int    // 1 or 2 (position within the team for doubles)
+  match    Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, playerId])
+  @@unique([matchId, teamSide, position])
+}
+
+model Tournament {
+  id          Int              @id @default(autoincrement())
+  name        String
+  matchType   MatchType        @default(SINGLES)  // Tournament is SINGLES or DOUBLES
+  description String?
+  startDate   DateTime
+  endDate     DateTime?
+  status      TournamentStatus @default(ACTIVE)
+  createdById Int
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  
+  // Tournament Points System Configuration
+  pointsForWin  Int            @default(3)  // Points awarded for winning a match
+  pointsForLoss Int            @default(0)  // Points awarded for losing a match
+  
+  createdBy   User             @relation(fields: [createdById], references: [id])
+  groups      Group[]
+  matches     Match[]
+  teams       Team[]           // Teams belonging to this doubles tournament
+  
+  @@index([status])
+  @@index([createdById])
+  @@index([matchType])
+}
+
+model Group {
+  id               Int           @id @default(autoincrement())
+  tournamentId     Int
+  name             String
+  description      String?
+  color            String?       // Hex color for UI
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  
+  tournament       Tournament    @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  members          GroupMember[]
+  matchesAsGroup1  Match[]       @relation("MatchGroup1")
+  matchesAsGroup2  Match[]       @relation("MatchGroup2")
+  matchesWon       Match[]       @relation("MatchWinner")
+  performances     MatchPerformance[]
+  teamPerformances TeamPerformance[]
+  
+  @@unique([tournamentId, name])
+  @@index([tournamentId])
+}
+
+model GroupMember {
+  id                    Int       @id @default(autoincrement())
+  groupId               Int
+  playerId              Int
+  joinedAt              DateTime  @default(now())
+  leftAt                DateTime?
+  isActive              Boolean   @default(true)
+  qualifiedForSemis     Boolean   @default(false)  // Track qualification for playoffs
+  qualificationRank     Int?                        // Final rank in group (1, 2, etc.)
+  
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  
+  @@unique([groupId, playerId, joinedAt])
+  @@index([groupId, isActive])
+  @@index([playerId])
+}
+
+model MatchPerformance {
+  id               Int      @id @default(autoincrement())
+  matchId          Int
+  playerId         Int
+  groupId          Int
+  teamSide         Int      // 1 or 2
+  gamePoints       Int      @default(0)      // Individual game score points (renamed from points)
+  tournamentPoints Float    @default(0)      // Tournament standings points (changed to Float for exact division)
+  won              Boolean
+  aces             Int?     @default(0)
+  errors           Int?     @default(0)
+  createdAt        DateTime @default(now())
+  
+  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  player    Player   @relation(fields: [playerId], references: [id])
+  group     Group    @relation(fields: [groupId], references: [id])
+  
+  @@unique([matchId, playerId])
+  @@index([playerId])
+  @@index([groupId])
+  @@index([matchId])
+}
+
+model TeamPerformance {
+  id               Int      @id @default(autoincrement())
+  matchId          Int
+  teamId           Int
+  groupId          Int
+  teamSide         Int      // 1 or 2
+  gamePoints       Int      @default(0)      // Team's actual match score
+  tournamentPoints Float    @default(0)      // Tournament standings points
+  won              Boolean
+  createdAt        DateTime @default(now())
+  
+  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  team      Team     @relation(fields: [teamId], references: [id])
+  group     Group    @relation(fields: [groupId], references: [id])
+  
+  @@unique([matchId, teamId])
+  @@index([teamId])
+  @@index([groupId])
+  @@index([matchId])
+}

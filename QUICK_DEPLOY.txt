@@ -1,0 +1,68 @@
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🚀 QUICK DEPLOYMENT CHEAT SHEET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1️⃣  GIT COMMIT
+────────────────
+git add .
+git commit -m "Production ready: MVP deployment"
+git push origin main
+
+
+2️⃣  VERCEL SETUP
+────────────────
+npm i -g vercel
+vercel login
+vercel link
+
+
+3️⃣  DATABASE (Choose one)
+──────────────────────────
+# Vercel Postgres:
+vercel postgres create game-dashboard-db
+
+# OR Turso:
+turso db create game-dashboard
+turso db show game-dashboard --url
+turso db tokens create game-dashboard
+vercel env add DATABASE_URL
+vercel env add DATABASE_AUTH_TOKEN
+
+
+4️⃣  DEPLOY
+───────────
+vercel --prod
+
+
+5️⃣  MIGRATE
+────────────
+vercel env pull .env.production
+npx prisma migrate deploy
+
+
+6️⃣  CREATE ADMIN
+─────────────────
+npx prisma studio
+# User table → Add: name, email, password, isAdmin=true
+
+
+✅ DONE!
+────────
+Visit: https://your-app.vercel.app/login
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Useful Commands:
+  vercel logs          - View deployment logs
+  vercel --open        - Open project in browser
+  vercel env ls        - List environment variables
+  vercel --prod        - Redeploy to production
+
+Troubleshooting:
+  Build fails?         - Check vercel logs
+  Database error?      - Verify DATABASE_URL is set
+  Can't login?         - Create admin user via Prisma Studio
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
