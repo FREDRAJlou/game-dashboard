@@ -26,17 +26,19 @@ type Player = {
 };
 
 type PlayerStats = {
-  playerId: number;
-  playerName: string;
-  matchesPlayed: number;
-  matchesWon: number;
-  matchesLost: number;
-  winRate: number;
-  totalPointsScored: number;
-  totalPointsConceded: number;
-  averagePointsScored: number;
-  averagePointsConceded: number;
-  pointDifferential: number;
+  player: {
+    id: number;
+    name: string;
+  };
+  overall: {
+    totalMatches: number;
+    wins: number;
+    losses: number;
+    winRate: number;
+    gamePointsScored: number;
+    gamePointsConceded: number;
+    avgGamePointsPerMatch: number;
+  };
 };
 
 export default function ComparePlayersPage() {
@@ -260,69 +262,73 @@ export default function ComparePlayersPage() {
               <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
                 <Box flex={1}>
                   <Typography variant="h5" align="center" fontWeight="bold" color="primary">
-                    {player1Stats.playerName}
+                    {player1Stats.player.name}
                   </Typography>
                 </Box>
                 <Box />
                 <Box flex={1}>
                   <Typography variant="h5" align="center" fontWeight="bold" color="primary">
-                    {player2Stats.playerName}
+                    {player2Stats.player.name}
                   </Typography>
                 </Box>
               </Stack>
 
               {renderStatComparison(
                 'Matches Played',
-                player1Stats.matchesPlayed,
-                player2Stats.matchesPlayed,
+                player1Stats.overall.totalMatches,
+                player2Stats.overall.totalMatches,
                 false,
                 true
               )}
 
               {renderStatComparison(
                 'Matches Won',
-                player1Stats.matchesWon,
-                player2Stats.matchesWon,
+                player1Stats.overall.wins,
+                player2Stats.overall.wins,
                 false,
                 true
               )}
 
               {renderStatComparison(
                 'Win Rate',
-                player1Stats.winRate.toFixed(1),
-                player2Stats.winRate.toFixed(1),
+                player1Stats.overall.winRate.toFixed(1),
+                player2Stats.overall.winRate.toFixed(1),
                 true,
                 true
               )}
 
               {renderStatComparison(
                 'Total Points Scored',
-                player1Stats.totalPointsScored,
-                player2Stats.totalPointsScored,
+                player1Stats.overall.gamePointsScored,
+                player2Stats.overall.gamePointsScored,
                 false,
                 true
               )}
 
               {renderStatComparison(
                 'Total Points Conceded',
-                player1Stats.totalPointsConceded,
-                player2Stats.totalPointsConceded,
+                player1Stats.overall.gamePointsConceded,
+                player2Stats.overall.gamePointsConceded,
                 false,
                 false
               )}
 
               {renderStatComparison(
                 'Average Points Per Match',
-                player1Stats.averagePointsScored.toFixed(1),
-                player2Stats.averagePointsScored.toFixed(1),
+                player1Stats.overall.avgGamePointsPerMatch.toFixed(1),
+                player2Stats.overall.avgGamePointsPerMatch.toFixed(1),
                 false,
                 true
               )}
 
               {renderStatComparison(
                 'Point Differential',
-                player1Stats.pointDifferential > 0 ? `+${player1Stats.pointDifferential}` : player1Stats.pointDifferential,
-                player2Stats.pointDifferential > 0 ? `+${player2Stats.pointDifferential}` : player2Stats.pointDifferential,
+                (player1Stats.overall.gamePointsScored - player1Stats.overall.gamePointsConceded) > 0 
+                  ? `+${player1Stats.overall.gamePointsScored - player1Stats.overall.gamePointsConceded}` 
+                  : player1Stats.overall.gamePointsScored - player1Stats.overall.gamePointsConceded,
+                (player2Stats.overall.gamePointsScored - player2Stats.overall.gamePointsConceded) > 0 
+                  ? `+${player2Stats.overall.gamePointsScored - player2Stats.overall.gamePointsConceded}` 
+                  : player2Stats.overall.gamePointsScored - player2Stats.overall.gamePointsConceded,
                 false,
                 true
               )}
