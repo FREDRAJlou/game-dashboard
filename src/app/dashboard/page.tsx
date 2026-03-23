@@ -121,16 +121,16 @@ export default function DashboardPage() {
 
   const formatDate = (date: string | Date) => {
     const d = new Date(date);
-    // Format in local timezone with explicit 12-hour format
-    return d.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-      timeZoneName: 'short', // Shows timezone abbreviation (e.g., PST, EST)
-    });
+    // Use UTC time to avoid timezone conversion
+    const month = d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
+    const day = d.getUTCDate();
+    const year = d.getUTCFullYear();
+    const hours = d.getUTCHours();
+    const minutes = d.getUTCMinutes().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    
+    return `${month} ${day}, ${year} ${displayHours}:${minutes} ${ampm} UTC`;
   };
 
   const getStatusColor = (status: string): "default" | "primary" | "success" | "error" | "warning" => {
