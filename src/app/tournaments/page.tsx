@@ -184,7 +184,15 @@ export default function TournamentsPage() {
           >
             Home
           </Button>
-          <Typography variant={{ xs: 'h5', sm: 'h4' }} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography 
+            variant="h4" 
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1,
+              fontSize: { xs: '1.5rem', sm: '2.125rem' }
+            }}
+          >
             <EmojiEventsIcon fontSize="large" color="primary" />
             <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
               Tournaments
