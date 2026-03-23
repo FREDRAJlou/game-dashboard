@@ -320,7 +320,7 @@ export default function DashboardPage() {
                         <Stack direction="row" spacing={0.5}>
                           <Chip label={match.type} size="small" color="primary" variant="outlined" />
                           {match.tournamentId ? (
-                            <Chip label="Tournament" size="small" color="warning" />
+                            <Chip label="Tournament" size="small" color="warning" variant="outlined" />
                           ) : (
                             <Chip label="Unranked" size="small" variant="outlined" />
                           )}
@@ -333,9 +333,13 @@ export default function DashboardPage() {
                         />
                       </Stack>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                        {formatTeamDisplay(match.team1, match.team1Name, match.players, 1, match.group1?.color)}
+                        <Box sx={{ fontWeight: 'bold' }}>
+                          {formatTeamDisplay(match.team1, match.team1Name, match.players, 1, match.group1?.color)}
+                        </Box>
                         <Typography variant="body1" fontWeight="medium">vs</Typography>
-                        {formatTeamDisplay(match.team2, match.team2Name, match.players, 2, match.group2?.color)}
+                        <Box sx={{ fontWeight: 'bold' }}>
+                          {formatTeamDisplay(match.team2, match.team2Name, match.players, 2, match.group2?.color)}
+                        </Box>
                       </Box>
                       {match.team1Score !== null && match.team2Score !== null && (
                         <Typography variant="h6" color="warning.main" sx={{ my: 1 }}>
@@ -423,7 +427,7 @@ export default function DashboardPage() {
                           <Stack direction="row" spacing={0.5}>
                             <Chip label={match.type} size="small" color="primary" variant="outlined" />
                             {match.tournamentId ? (
-                              <Chip label="Tournament" size="small" color="warning" />
+                              <Chip label="Tournament" size="small" color="warning" variant="outlined" />
                             ) : (
                               <Chip label="Unranked" size="small" variant="outlined" />
                             )}
@@ -435,9 +439,13 @@ export default function DashboardPage() {
                           />
                         </Stack>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                          {formatTeamDisplay(match.team1, match.team1Name, match.players, 1, match.group1?.color)}
+                          <Box sx={{ fontWeight: 'bold' }}>
+                            {formatTeamDisplay(match.team1, match.team1Name, match.players, 1, match.group1?.color)}
+                          </Box>
                           <Typography variant="body1" fontWeight="medium">vs</Typography>
-                          {formatTeamDisplay(match.team2, match.team2Name, match.players, 2, match.group2?.color)}
+                          <Box sx={{ fontWeight: 'bold' }}>
+                            {formatTeamDisplay(match.team2, match.team2Name, match.players, 2, match.group2?.color)}
+                          </Box>
                         </Box>
                         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                           {formatDate(match.scheduledAt)}
@@ -510,7 +518,7 @@ export default function DashboardPage() {
                           <Stack direction="row" spacing={0.5}>
                             <Chip label={match.type} size="small" variant="outlined" />
                             {match.tournamentId ? (
-                              <Chip label="Tournament" size="small" color="warning" />
+                              <Chip label="Tournament" size="small" color="warning" variant="outlined" />
                             ) : (
                               <Chip label="Unranked" size="small" variant="outlined" />
                             )}
@@ -518,9 +526,13 @@ export default function DashboardPage() {
                           <Chip label="COMPLETED" size="small" color="success" />
                         </Stack>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                          {formatTeamDisplay(match.team1, match.team1Name, match.players, 1, match.group1?.color)}
+                          <Box sx={{ fontWeight: 'bold' }}>
+                            {formatTeamDisplay(match.team1, match.team1Name, match.players, 1, match.group1?.color)}
+                          </Box>
                           <Typography variant="body1" fontWeight="medium">vs</Typography>
-                          {formatTeamDisplay(match.team2, match.team2Name, match.players, 2, match.group2?.color)}
+                          <Box sx={{ fontWeight: 'bold' }}>
+                            {formatTeamDisplay(match.team2, match.team2Name, match.players, 2, match.group2?.color)}
+                          </Box>
                         </Box>
                         {match.team1Score !== null && match.team2Score !== null && (
                           <Typography variant="h6" color="primary" sx={{ my: 1 }}>
