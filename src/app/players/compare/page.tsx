@@ -18,7 +18,6 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { ArrowBack, CompareArrows } from '@mui/icons-material';
-import Header from '@/components/Header';
 
 type Player = {
   id: number;
@@ -165,21 +164,16 @@ export default function ComparePlayersPage() {
 
   if (loading) {
     return (
-      <Box>
-        <Header />
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-          <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-            <CircularProgress />
-          </Box>
-        </Container>
-      </Box>
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+          <CircularProgress />
+        </Box>
+      </Container>
     );
   }
 
   return (
-    <Box>
-      <Header />
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
         <Button
           startIcon={<ArrowBack />}
           onClick={() => router.push('/dashboard')}
@@ -336,6 +330,5 @@ export default function ComparePlayersPage() {
           )}
         </Paper>
       </Container>
-    </Box>
   );
 }
