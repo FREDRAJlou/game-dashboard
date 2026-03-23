@@ -4,13 +4,14 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    const players: Array<Player & { user: Pick<User, 'id' | 'username' | 'isAdmin'> | null }> = await prisma.player.findMany({
+    const players = await prisma.player.findMany({
       include: {
         user: {
           select: {
             id: true,
             username: true,
             isAdmin: true,
+            isScoringAdmin: true,
           },
         },
       },

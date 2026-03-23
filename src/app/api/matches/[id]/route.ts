@@ -83,7 +83,36 @@ export async function PATCH(request: Request, context: RouteContext) {
       scheduledAt,  // New: allow updating schedule time
       notes,        // New: allow updating notes
       players,      // New: allow updating players (array of {playerId, teamSide, position})
+      userId,       // User ID making the request for permission checking
     } = body;
+
+    // Check user permissions if changing status or scores
+    if (userId && (status || team1Score !== undefined || team2Score !== undefined || startedAt || completedAt)) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { isAdmin: true, isScoringAdmin: true },
+      });
+
+      if (!user) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      }
+
+      // Only admin can start match (change to IN_PROGRESS) or complete match (change to COMPLETED)
+      if ((status === 'IN_PROGRESS' || status === 'COMPLETED' || startedAt || completedAt) && !user.isAdmin) {
+        return NextResponse.json(
+          { error: 'Only administrators can start or complete matches' },
+          { status: 403 }
+        );
+      }
+
+      // Admin or scoring admin can update scores
+      if ((team1Score !== undefined || team2Score !== undefined) && !user.isAdmin && !user.isScoringAdmin) {
+        return NextResponse.json(
+          { error: 'Only administrators or scoring administrators can update match scores' },
+          { status: 403 }
+        );
+      }
+    }
 
     // Validate match exists
     const match = await prisma.match.findUnique({

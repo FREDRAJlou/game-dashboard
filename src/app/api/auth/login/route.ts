@@ -35,6 +35,7 @@ export async function POST(request: Request) {
         id: user.id,
         username: user.username,
         isAdmin: user.isAdmin,
+        isScoringAdmin: user.isScoringAdmin,
         playerId: user.playerProfile?.id ?? null,
         playerName: user.playerProfile?.name ?? null,
       },

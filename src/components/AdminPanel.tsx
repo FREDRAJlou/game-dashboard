@@ -30,6 +30,12 @@ type Player = {
   name: string;
   userId: number | null;
   isActive: boolean;
+  user?: {
+    id: number;
+    username: string;
+    isAdmin: boolean;
+    isScoringAdmin: boolean;
+  } | null;
 };
 
 interface AdminPanelProps {
@@ -114,6 +120,25 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     }
   };
 
+  const handleToggleScoringAdmin = async (playerId: number, currentStatus: boolean) => {
+    try {
+      const response = await fetch(`/api/players/manage/${playerId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isScoringAdmin: !currentStatus }),
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update scoring admin role');
+      }
+      await loadPlayers();
+      setMessage('Scoring admin role updated');
+      setTimeout(() => setMessage(null), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update scoring admin role');
+    }
+  };
+
   return (
     <Dialog open onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>Admin Panel</DialogTitle>
@@ -122,6 +147,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
           <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)}>
             <Tab label="Add Player" />
             <Tab label="Manage Players" />
+            <Tab label="Scoring Admins" />
           </Tabs>
         </Box>
 
@@ -229,6 +255,58 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                             {player.userId && (
                               <Typography variant="caption" component="span" color="primary">
                                 • Has Login
+                              </Typography>
+                            )}
+                          </Stack>
+                        }
+                      />
+                    </ListItem>
+                  </Paper>
+                ))}
+              </List>
+            )}
+          </Box>
+        )}
+
+        {/* Scoring Admins Tab */}
+        {tabValue === 2 && (
+          <Box>
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Scoring Admins can update match scores but cannot start or complete matches. 
+              Only full admins can start and complete matches.
+            </Alert>
+            {loading ? (
+              <Typography>Loading players...</Typography>
+            ) : (
+              <List>
+                {players
+                  .filter(p => p.userId) // Only show players with user accounts
+                  .map((player) => (
+                  <Paper key={player.id} variant="outlined" sx={{ mb: 1 }}>
+                    <ListItem
+                      secondaryAction={
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={player.user?.isScoringAdmin || false}
+                              onChange={() => handleToggleScoringAdmin(player.id, player.user?.isScoringAdmin || false)}
+                              disabled={player.user?.isAdmin}
+                            />
+                          }
+                          label="Scoring Admin"
+                        />
+                      }
+                    >
+                      <ListItemText
+                        primary={player.name}
+                        secondary={
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <Typography variant="caption" component="span">
+                              @{player.user?.username}
+                            </Typography>
+                            {player.user?.isAdmin && (
+                              <Typography variant="caption" component="span" color="error">
+                                • Full Admin (cannot be modified)
                               </Typography>
                             )}
                           </Stack>

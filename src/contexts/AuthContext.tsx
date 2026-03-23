@@ -6,6 +6,7 @@ interface User {
   id: number;
   username: string;
   isAdmin: boolean;
+  isScoringAdmin: boolean;
   playerId: number | null;
   playerName: string | null;
 }

@@ -281,9 +281,33 @@ export default function DashboardPage() {
                 <Typography color="text.secondary">No upcoming matches</Typography>
               ) : (
                 <Stack spacing={2}>
-                  {upcomingMatches.map((match) => (
-                    <Card key={match.id} variant="outlined">
+                  {upcomingMatches.map((match) => {
+                    // Check if logged-in user is playing in this match
+                    const isUserPlaying = user?.playerId && match.players?.some(
+                      (p) => p.playerId === user.playerId
+                    );
+                    
+                    return (
+                    <Card 
+                      key={match.id} 
+                      variant="outlined"
+                      sx={{
+                        ...(isUserPlaying && {
+                          borderColor: 'primary.main',
+                          borderWidth: 2,
+                          backgroundColor: 'action.hover',
+                        }),
+                      }}
+                    >
                       <CardContent>
+                        {isUserPlaying && (
+                          <Chip 
+                            label="⭐ Your Match" 
+                            size="small" 
+                            color="primary"
+                            sx={{ mb: 1 }}
+                          />
+                        )}
                         <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
                           <Stack direction="row" spacing={0.5}>
                             <Chip label={match.type} size="small" color="primary" variant="outlined" />
@@ -347,7 +371,8 @@ export default function DashboardPage() {
                         </Stack>
                       </CardContent>
                     </Card>
-                  ))}
+                    );
+                  })}
                 </Stack>
               )}
             </Paper>
