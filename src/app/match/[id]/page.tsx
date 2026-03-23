@@ -274,7 +274,16 @@ export default function LiveMatchPage({ params }: { params: Promise<{ id: string
         <Stack spacing={3}>
           {/* Match Header */}
           <Box textAlign="center">
-            <Stack direction="row" spacing={1} justifyContent="center" sx={{ mb: 2 }}>
+            <Stack 
+              direction="row" 
+              spacing={1} 
+              justifyContent="center" 
+              sx={{ 
+                mb: 2,
+                flexWrap: 'wrap',
+                gap: 1,
+              }}
+            >
               <Chip label={match.type} color="primary" />
               <Chip label={stageLabel} color="secondary" />
               <Chip 
