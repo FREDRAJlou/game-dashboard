@@ -120,8 +120,18 @@ export default function DashboardPage() {
     router.push('/login');
   };
 
-  const upcomingMatches = matches.filter((m) => m.status === 'SCHEDULED' || m.status === 'IN_PROGRESS');
-  const completedMatches = matches.filter((m) => m.status === 'COMPLETED');
+  // Separate matches by status
+  const inProgressMatches = matches
+    .filter((m) => m.status === 'IN_PROGRESS')
+    .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
+  
+  const scheduledMatches = matches
+    .filter((m) => m.status === 'SCHEDULED')
+    .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
+  
+  const completedMatches = matches
+    .filter((m) => m.status === 'COMPLETED')
+    .sort((a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime()); // Most recent first
 
   const formatDate = (date: string | Date) => {
     const d = new Date(date);
@@ -249,10 +259,10 @@ export default function DashboardPage() {
               <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
                 <CalendarToday color="primary" />
                 <Typography color="text.secondary" variant="body2">
-                  Upcoming
+                  Scheduled
                 </Typography>
               </Stack>
-              <Typography variant="h4">{upcomingMatches.length}</Typography>
+              <Typography variant="h4">{scheduledMatches.length}</Typography>
             </CardContent>
           </Card>
 
@@ -269,6 +279,101 @@ export default function DashboardPage() {
           </Card>
         </Stack>
 
+        {/* In Progress Matches - Full Width Alert Section */}
+        {inProgressMatches.length > 0 && (
+          <Paper sx={{ p: 3, mb: 3, bgcolor: 'warning.lighter' }}>
+            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+              <EmojiEvents color="warning" />
+              <Typography variant="h6" color="warning.main">
+                Live Matches ({inProgressMatches.length})
+              </Typography>
+            </Stack>
+            <Divider sx={{ mb: 2 }} />
+            <Stack spacing={2}>
+              {inProgressMatches.map((match) => {
+                const isUserPlaying = user?.playerId && match.players?.some(
+                  (p) => p.playerId === user.playerId
+                );
+                
+                return (
+                  <Card 
+                    key={match.id} 
+                    variant="outlined"
+                    sx={{
+                      ...(isUserPlaying && {
+                        borderColor: 'warning.main',
+                        borderWidth: 2,
+                        backgroundColor: 'warning.lighter',
+                      }),
+                    }}
+                  >
+                    <CardContent>
+                      {isUserPlaying && (
+                        <Chip 
+                          label="⭐ Your Match" 
+                          size="small" 
+                          color="warning"
+                          sx={{ mb: 1 }}
+                        />
+                      )}
+                      <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                        <Stack direction="row" spacing={0.5}>
+                          <Chip label={match.type} size="small" color="primary" variant="outlined" />
+                          {match.tournamentId ? (
+                            <Chip label="Tournament" size="small" color="warning" />
+                          ) : (
+                            <Chip label="Unranked" size="small" variant="outlined" />
+                          )}
+                        </Stack>
+                        <Chip
+                          label="LIVE"
+                          size="small"
+                          color="warning"
+                          sx={{ animation: 'pulse 2s infinite' }}
+                        />
+                      </Stack>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                        {formatTeamDisplay(match.team1, match.team1Name, match.players, 1, match.group1?.color)}
+                        <Typography variant="body1" fontWeight="medium">vs</Typography>
+                        {formatTeamDisplay(match.team2, match.team2Name, match.players, 2, match.group2?.color)}
+                      </Box>
+                      {match.team1Score !== null && match.team2Score !== null && (
+                        <Typography variant="h6" color="warning.main" sx={{ my: 1 }}>
+                          {match.team1Score} - {match.team2Score}
+                        </Typography>
+                      )}
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                        Started: {formatDate(match.scheduledAt)}
+                      </Typography>
+                      <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+                        {user?.isAdmin && (
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<Edit />}
+                            onClick={() => setEditingMatch(match)}
+                          >
+                            Edit
+                          </Button>
+                        )}
+                        <Button
+                          variant="contained"
+                          color="warning"
+                          size="small"
+                          onClick={() => router.push(`/match/${match.id}`)}
+                          fullWidth
+                        >
+                          View Live Match
+                        </Button>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </Stack>
+          </Paper>
+        )}
+
         <Stack 
           direction={{ xs: 'column', md: 'row' }} 
           spacing={3}
@@ -277,15 +382,15 @@ export default function DashboardPage() {
             <Paper sx={{ p: 3 }}>
               <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
                 <CalendarToday />
-                <Typography variant="h6">Upcoming Matches</Typography>
+                <Typography variant="h6">Scheduled Matches</Typography>
               </Stack>
               <Divider sx={{ mb: 2 }} />
 
-              {upcomingMatches.length === 0 ? (
-                <Typography color="text.secondary">No upcoming matches</Typography>
+              {scheduledMatches.length === 0 ? (
+                <Typography color="text.secondary">No scheduled matches</Typography>
               ) : (
                 <Stack spacing={2}>
-                  {upcomingMatches.map((match) => {
+                  {scheduledMatches.map((match) => {
                     // Check if logged-in user is playing in this match
                     const isUserPlaying = user?.playerId && match.players?.some(
                       (p) => p.playerId === user.playerId
@@ -341,7 +446,7 @@ export default function DashboardPage() {
                           </Typography>
                         )}
                         <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-                          {user?.isAdmin && match.status === 'SCHEDULED' && (
+                          {user?.isAdmin ? (
                             <>
                               <Button
                                 variant="contained"
@@ -360,30 +465,7 @@ export default function DashboardPage() {
                                 Edit
                               </Button>
                             </>
-                          )}
-                          {user?.isAdmin && match.status === 'IN_PROGRESS' && (
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              startIcon={<Edit />}
-                              onClick={() => setEditingMatch(match)}
-                              sx={{ ml: 1 }}
-                            >
-                              Edit
-                            </Button>
-                          )}
-                          {match.status === 'IN_PROGRESS' && (
-                            <Button
-                              variant="contained"
-                              color="warning"
-                              size="small"
-                              onClick={() => router.push(`/match/${match.id}`)}
-                              fullWidth
-                            >
-                              View Live Match
-                            </Button>
-                          )}
-                          {match.status === 'SCHEDULED' && !user?.isAdmin && (
+                          ) : (
                             <Button
                               variant="outlined"
                               size="small"
