@@ -103,6 +103,7 @@ export default function LiveMatchPage({ params }: { params: Promise<{ id: string
         body: JSON.stringify({
           status: 'IN_PROGRESS',
           startedAt: new Date().toISOString(),
+          userId: user.id,
         }),
       });
 
@@ -116,7 +117,7 @@ export default function LiveMatchPage({ params }: { params: Promise<{ id: string
   };
 
   const handleScoreUpdate = async (team: 1 | 2, increment: number) => {
-    if (!user?.isAdmin || match?.status !== 'IN_PROGRESS') return;
+    if ((!user?.isAdmin && !user?.isScoringAdmin) || match?.status !== 'IN_PROGRESS') return;
 
     const newTeam1Score = team === 1 ? team1Score + increment : team1Score;
     const newTeam2Score = team === 2 ? team2Score + increment : team2Score;
@@ -135,6 +136,7 @@ export default function LiveMatchPage({ params }: { params: Promise<{ id: string
         body: JSON.stringify({
           team1Score: newTeam1Score,
           team2Score: newTeam2Score,
+          userId: user.id,
         }),
       });
       // Re-enable polling after successful update
@@ -147,7 +149,7 @@ export default function LiveMatchPage({ params }: { params: Promise<{ id: string
   };
 
   const handlePlayerScoreUpdate = async (playerId: number, increment: number) => {
-    if (!user?.isAdmin || match?.status !== 'IN_PROGRESS') return;
+    if ((!user?.isAdmin && !user?.isScoringAdmin) || match?.status !== 'IN_PROGRESS') return;
 
     const newScore = (playerScores[playerId] || 0) + increment;
     if (newScore < 0) return;
@@ -191,7 +193,10 @@ export default function LiveMatchPage({ params }: { params: Promise<{ id: string
       const response = await fetch(`/api/matches/${matchId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          ...body,
+          userId: user.id,
+        }),
       });
 
       if (!response.ok) throw new Error('Failed to complete match');
@@ -326,7 +331,7 @@ export default function LiveMatchPage({ params }: { params: Promise<{ id: string
                   {team1Score}
                 </Typography>
                 
-                {user?.isAdmin && match.status === 'IN_PROGRESS' && (
+                {(user?.isAdmin || user?.isScoringAdmin) && match.status === 'IN_PROGRESS' && (
                   <>
                     {/* Individual player scoring for doubles */}
                     {match.type === 'DOUBLES' && match.players.filter(p => p.teamSide === 1).length > 0 ? (
@@ -412,7 +417,7 @@ export default function LiveMatchPage({ params }: { params: Promise<{ id: string
                   {team2Score}
                 </Typography>
                 
-                {user?.isAdmin && match.status === 'IN_PROGRESS' && (
+                {(user?.isAdmin || user?.isScoringAdmin) && match.status === 'IN_PROGRESS' && (
                   <>
                     {/* Individual player scoring for doubles */}
                     {match.type === 'DOUBLES' && match.players.filter(p => p.teamSide === 2).length > 0 ? (

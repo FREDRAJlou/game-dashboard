@@ -20,9 +20,11 @@ import {
   EmojiEvents,
   CalendarToday,
   People,
+  Edit,
 } from '@mui/icons-material';
 import AddMatchForm from '@/components/AddMatchForm';
 import AdminPanel from '@/components/AdminPanel';
+import EditMatchDialog from '@/components/EditMatchDialog';
 
 type Match = {
   id: number;
@@ -45,6 +47,7 @@ type Match = {
     id: number;
     playerId: number;
     teamSide: number;
+    position: number;
     player: { id: number; name: string };
   }>;
   isUpcoming?: boolean;
@@ -72,6 +75,7 @@ export default function DashboardPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [showAddMatch, setShowAddMatch] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [editingMatch, setEditingMatch] = useState<Match | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -338,13 +342,34 @@ export default function DashboardPage() {
                         )}
                         <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
                           {user?.isAdmin && match.status === 'SCHEDULED' && (
+                            <>
+                              <Button
+                                variant="contained"
+                                size="small"
+                                onClick={() => router.push(`/match/${match.id}`)}
+                                sx={{ flex: 1 }}
+                              >
+                                Start Match
+                              </Button>
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<Edit />}
+                                onClick={() => setEditingMatch(match)}
+                              >
+                                Edit
+                              </Button>
+                            </>
+                          )}
+                          {user?.isAdmin && match.status === 'IN_PROGRESS' && (
                             <Button
-                              variant="contained"
+                              variant="outlined"
                               size="small"
-                              onClick={() => router.push(`/match/${match.id}`)}
-                              fullWidth
+                              startIcon={<Edit />}
+                              onClick={() => setEditingMatch(match)}
+                              sx={{ ml: 1 }}
                             >
-                              Start Match
+                              Edit
                             </Button>
                           )}
                           {match.status === 'IN_PROGRESS' && (
@@ -468,6 +493,19 @@ export default function DashboardPage() {
           onClose={() => {
             setShowAdminPanel(false);
             fetchData();
+          }}
+        />
+      )}
+
+      {editingMatch && (
+        <EditMatchDialog
+          open={!!editingMatch}
+          match={editingMatch}
+          players={players.filter((p) => p.isActive)}
+          onClose={() => setEditingMatch(null)}
+          onSuccess={() => {
+            fetchData();
+            setEditingMatch(null);
           }}
         />
       )}
