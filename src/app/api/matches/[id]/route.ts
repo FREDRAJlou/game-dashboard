@@ -61,7 +61,7 @@ export async function GET(request: Request, context: RouteContext) {
   }
 }
 
-// PATCH /api/matches/:id - Update match score and status
+// PATCH /api/matches/:id - Update match score, status, or details
 export async function PATCH(request: Request, context: RouteContext) {
   try {
     const { id } = await context.params;
@@ -72,7 +72,18 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
 
     const body = await request.json();
-    const { team1Score, team2Score, winnerTeam, status, startedAt, completedAt, playerScores } = body;
+    const { 
+      team1Score, 
+      team2Score, 
+      winnerTeam, 
+      status, 
+      startedAt, 
+      completedAt, 
+      playerScores,
+      scheduledAt,  // New: allow updating schedule time
+      notes,        // New: allow updating notes
+      players,      // New: allow updating players (array of {playerId, teamSide, position})
+    } = body;
 
     // Validate match exists
     const match = await prisma.match.findUnique({
@@ -149,6 +160,8 @@ export async function PATCH(request: Request, context: RouteContext) {
 
       if (startedAt) updateData.startedAt = new Date(startedAt);
       if (completedAt) updateData.completedAt = new Date(completedAt);
+      if (scheduledAt) updateData.scheduledAt = new Date(scheduledAt);
+      if (notes !== undefined) updateData.notes = notes;
 
       const updatedMatch = await tx.match.update({
         where: { id: matchId },
@@ -158,26 +171,34 @@ export async function PATCH(request: Request, context: RouteContext) {
             include: {
               player: true,
             },
-            orderBy: [{ teamSide: 'asc' }, { position: 'asc' }],
           },
           team1: true,
           team2: true,
-          group1: {
-            select: {
-              id: true,
-              name: true,
-              color: true,
-            },
-          },
-          group2: {
-            select: {
-              id: true,
-              name: true,
-              color: true,
-            },
-          },
+          group1: true,
+          group2: true,
+          tournament: true,
         },
       });
+
+      // Update players if provided
+      if (players && Array.isArray(players)) {
+        // Delete existing players
+        await tx.matchPlayer.deleteMany({
+          where: { matchId },
+        });
+
+        // Add new players
+        for (const player of players) {
+          await tx.matchPlayer.create({
+            data: {
+              matchId,
+              playerId: player.playerId,
+              teamSide: player.teamSide,
+              position: player.position || 1,
+            },
+          });
+        }
+      }
 
       // If match is completed and has groups, create performance records
       if (status === 'COMPLETED' && match.group1Id && match.group2Id && match.tournament) {
@@ -299,5 +320,38 @@ export async function PATCH(request: Request, context: RouteContext) {
   } catch (error) {
     console.error('Error updating match:', error);
     return NextResponse.json({ error: 'Failed to update match' }, { status: 500 });
+  }
+}
+
+// DELETE /api/matches/:id - Delete a match
+export async function DELETE(request: Request, context: RouteContext) {
+  try {
+    const { id } = await context.params;
+    const matchId = parseInt(id);
+
+    if (isNaN(matchId)) {
+      return NextResponse.json({ error: 'Invalid match ID' }, { status: 400 });
+    }
+
+    // Check if match exists
+    const match = await prisma.match.findUnique({
+      where: { id: matchId },
+      select: { id: true, status: true },
+    });
+
+    if (!match) {
+      return NextResponse.json({ error: 'Match not found' }, { status: 404 });
+    }
+
+    // Only allow deletion of non-completed matches or allow admin override
+    // For now, we'll allow deletion of any match
+    await prisma.match.delete({
+      where: { id: matchId },
+    });
+
+    return NextResponse.json({ message: 'Match deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting match:', error);
+    return NextResponse.json({ error: 'Failed to delete match' }, { status: 500 });
   }
 }
