@@ -25,17 +25,16 @@ export async function GET(
       return NextResponse.json({ error: 'Player not found' }, { status: 404 });
     }
 
-    // Get all completed SINGLES matches for this player (global stats)
+    // Get all completed matches for this player (global stats)
     const playerMatches = await prisma.match.findMany({
       where: {
         players: {
           some: { playerId: playerId },
         },
         status: 'COMPLETED',
-        tournament: {
-          matchType: 'SINGLES',  // Only singles matches for player stats
-          ...(tournamentId ? { id: tournamentId } : {}),  // Optional tournament filter
-        },
+        ...(tournamentId ? { 
+          tournament: { id: tournamentId }
+        } : {}),  // Optional tournament filter
       },
       include: {
         players: {
