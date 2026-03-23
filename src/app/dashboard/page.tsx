@@ -350,20 +350,22 @@ export default function DashboardPage() {
                           <Button
                             variant="outlined"
                             size="small"
+                            color="info"
                             startIcon={<Edit />}
                             onClick={() => setEditingMatch(match)}
+                            sx={{ minWidth: 'auto' }}
                           >
                             Edit
                           </Button>
                         )}
                         <Button
                           variant="contained"
-                          color="warning"
+                          color="error"
                           size="small"
                           onClick={() => router.push(`/match/${match.id}`)}
-                          fullWidth
+                          sx={{ minWidth: 'auto' }}
                         >
-                          View Live Match
+                          View Live
                         </Button>
                       </Stack>
                     </CardContent>
@@ -450,17 +452,20 @@ export default function DashboardPage() {
                             <>
                               <Button
                                 variant="contained"
+                                color="success"
                                 size="small"
                                 onClick={() => router.push(`/match/${match.id}`)}
-                                sx={{ flex: 1 }}
+                                sx={{ minWidth: 'auto' }}
                               >
                                 Start Match
                               </Button>
                               <Button
                                 variant="outlined"
+                                color="info"
                                 size="small"
                                 startIcon={<Edit />}
                                 onClick={() => setEditingMatch(match)}
+                                sx={{ minWidth: 'auto' }}
                               >
                                 Edit
                               </Button>
@@ -468,11 +473,12 @@ export default function DashboardPage() {
                           ) : (
                             <Button
                               variant="outlined"
+                              color="info"
                               size="small"
                               onClick={() => router.push(`/match/${match.id}`)}
-                              fullWidth
+                              sx={{ minWidth: 'auto' }}
                             >
-                              View Match Details
+                              View Details
                             </Button>
                           )}
                         </Stack>
