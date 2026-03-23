@@ -171,7 +171,10 @@ export default function DashboardPage() {
     // Use the group color if available and not null/undefined
     const chipColor = (groupColor && groupColor !== 'null') ? groupColor : null;
     
-    const displayLabel = teamName ? `${teamName} (${playerNames})` : (playerNames || teamLabel);
+    // Format with bold team name
+    const displayLabel = teamName 
+      ? `${teamName} (${playerNames})` 
+      : (playerNames || teamLabel);
     
     return (
       <Chip
@@ -182,7 +185,7 @@ export default function DashboardPage() {
           color: 'white',
         } : undefined}
         sx={{
-          fontWeight: 'medium',
+          fontWeight: 'bold',  // Make entire chip bold
           height: 'auto',
           py: 0.5,
           px: 1.5,

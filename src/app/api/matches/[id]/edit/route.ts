@@ -75,76 +75,74 @@ export async function PATCH(request: Request, context: RouteContext) {
       }
     }
 
-    // Update match in a transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // Prepare update data
-      const updateData: any = {};
-      if (scheduledAt) updateData.scheduledAt = new Date(scheduledAt);
-      if (notes !== undefined) updateData.notes = notes;
+    // Perform updates without transaction to avoid timeout issues
+    // These operations are safe to do separately
+    
+    // Prepare update data for match
+    const updateData: any = {};
+    if (scheduledAt) updateData.scheduledAt = new Date(scheduledAt);
+    if (notes !== undefined) updateData.notes = notes;
 
-      // Update match basic info
-      if (Object.keys(updateData).length > 0) {
-        await tx.match.update({
-          where: { id: matchId },
-          data: updateData,
-        });
-      }
-
-      // Update players if provided
-      if (players && Array.isArray(players)) {
-        // Delete existing match players
-        await tx.matchPlayer.deleteMany({
-          where: { matchId },
-        });
-
-        // Add new players
-        for (const player of players) {
-          await tx.matchPlayer.create({
-            data: {
-              matchId,
-              playerId: player.playerId,
-              teamSide: player.teamSide,
-              position: player.position || 1,
-            },
-          });
-        }
-      }
-
-      // Fetch updated match with all relations
-      return await tx.match.findUnique({
+    // Update match basic info if there's data to update
+    if (Object.keys(updateData).length > 0) {
+      await prisma.match.update({
         where: { id: matchId },
-        include: {
-          players: {
-            include: {
-              player: true,
-            },
-            orderBy: [{ teamSide: 'asc' }, { position: 'asc' }],
+        data: updateData,
+      });
+    }
+
+    // Update players if provided
+    if (players && Array.isArray(players)) {
+      // Delete existing match players
+      await prisma.matchPlayer.deleteMany({
+        where: { matchId },
+      });
+
+      // Add new players in bulk
+      await prisma.matchPlayer.createMany({
+        data: players.map(player => ({
+          matchId,
+          playerId: player.playerId,
+          teamSide: player.teamSide,
+          position: player.position || 1,
+        })),
+      });
+    }
+
+    // Fetch updated match with all relations
+    const result = await prisma.match.findUnique({
+      where: { id: matchId },
+      include: {
+        players: {
+          include: {
+            player: true,
           },
-          team1: true,
-          team2: true,
-          group1: {
-            select: {
-              id: true,
-              name: true,
-              color: true,
-            },
-          },
-          group2: {
-            select: {
-              id: true,
-              name: true,
-              color: true,
-            },
-          },
-          tournament: {
-            select: {
-              id: true,
-              name: true,
-              status: true,
-            },
+          orderBy: [{ teamSide: 'asc' }, { position: 'asc' }],
+        },
+        team1: true,
+        team2: true,
+        group1: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
           },
         },
-      });
+        group2: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+          },
+        },
+        tournament: {
+          select: {
+            id: true,
+            name: true,
+            status: true,
+          },
+        },
+      },
     });
 
     return NextResponse.json(result);

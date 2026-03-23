@@ -277,6 +277,10 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
             </Alert>
             {loading ? (
               <Typography>Loading players...</Typography>
+            ) : players.filter(p => p.userId).length === 0 ? (
+              <Typography color="text.secondary">
+                No players with user accounts found. Create players with login credentials in the "Add Player" tab first.
+              </Typography>
             ) : (
               <List>
                 {players

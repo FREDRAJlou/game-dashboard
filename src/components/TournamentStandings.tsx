@@ -147,8 +147,12 @@ export default function TournamentStandings({ tournamentId }: TournamentStanding
       ? playersWithMatches.reduce((sum: number, s: PlayerStanding) => sum + s.winRate, 0) / playersWithMatches.length
       : 0;
     
-    // Find top performer (highest tournament points, then wins)
-    const topPlayer = groupData.standings.length > 0 ? groupData.standings[0] : null;
+    // Find top performer by game points (total points scored in actual matches)
+    const topPlayer = groupData.standings.length > 0 
+      ? [...groupData.standings].sort((a: PlayerStanding, b: PlayerStanding) => 
+          b.totalGamePointsScored - a.totalGamePointsScored
+        )[0]
+      : null;
     
     return {
       group: groupData.group,
@@ -268,12 +272,12 @@ export default function TournamentStandings({ tournamentId }: TournamentStanding
                       <TableCell>
                         <Typography variant="body2" fontSize="0.875rem">
                           {group.topPlayer}
-                          {group.topPlayerWins > 0 && (
+                          {group.topPlayerGamePoints > 0 && (
                             <Typography component="span" fontSize="0.75rem" color="text.secondary" sx={{ ml: 0.5 }}>
-                              ({group.topPlayerWins}W, {group.topPlayerPoints}pts)
+                              ({group.topPlayerGamePoints} game pts, {group.topPlayerPoints} tourney pts)
                             </Typography>
                           )}
-                          {group.topPlayerWins === 0 && (
+                          {group.topPlayerGamePoints === 0 && (
                             <Typography component="span" fontSize="0.75rem" color="text.secondary" sx={{ ml: 0.5 }}>
                               (No matches)
                             </Typography>

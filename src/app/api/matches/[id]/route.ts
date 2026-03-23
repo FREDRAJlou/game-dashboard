@@ -90,17 +90,24 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (userId && (status || team1Score !== undefined || team2Score !== undefined || startedAt || completedAt)) {
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { isAdmin: true, isScoringAdmin: true },
       });
 
       if (!user) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
 
-      // Only admin can start match (change to IN_PROGRESS) or complete match (change to COMPLETED)
-      if ((status === 'IN_PROGRESS' || status === 'COMPLETED' || startedAt || completedAt) && !user.isAdmin) {
+      // Only admin can start match (change to IN_PROGRESS)
+      // Both admin and scoring admin can complete match (change to COMPLETED)
+      if (status === 'IN_PROGRESS' && !user.isAdmin) {
         return NextResponse.json(
-          { error: 'Only administrators can start or complete matches' },
+          { error: 'Only administrators can start matches' },
+          { status: 403 }
+        );
+      }
+
+      if ((status === 'COMPLETED' || completedAt) && !user.isAdmin && !user.isScoringAdmin) {
+        return NextResponse.json(
+          { error: 'Only administrators or scoring administrators can complete matches' },
           { status: 403 }
         );
       }
@@ -146,8 +153,9 @@ export async function PATCH(request: Request, context: RouteContext) {
       return NextResponse.json({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` }, { status: 400 });
     }
 
-    // Validate scores
-    if (team1Score !== undefined && team2Score !== undefined) {
+    // Validate scores - only enforce strict validation when completing match
+    // Allow incremental updates during IN_PROGRESS without winner
+    if (status === 'COMPLETED' && team1Score !== undefined && team2Score !== undefined) {
       if (team1Score < 0 || team2Score < 0) {
         return NextResponse.json({ error: 'Scores cannot be negative' }, { status: 400 });
       }
@@ -165,6 +173,11 @@ export async function PATCH(request: Request, context: RouteContext) {
       if (actualWinner !== winnerTeam) {
         return NextResponse.json({ error: 'Winner team does not match the scores' }, { status: 400 });
       }
+    } else if (team1Score !== undefined || team2Score !== undefined) {
+      // For incremental updates during IN_PROGRESS, just validate non-negative
+      if ((team1Score !== undefined && team1Score < 0) || (team2Score !== undefined && team2Score < 0)) {
+        return NextResponse.json({ error: 'Scores cannot be negative' }, { status: 400 });
+      }
     }
 
     // Determine winner group ID
@@ -175,7 +188,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       winnerGroupId = match.group2Id;
     }
 
-    // Update match in a transaction
+    // Update match in a transaction with increased timeout
     const result = await prisma.$transaction(async (tx) => {
       // Update match
       const updateData: any = {
@@ -216,15 +229,15 @@ export async function PATCH(request: Request, context: RouteContext) {
           where: { matchId },
         });
 
-        // Add new players
-        for (const player of players) {
-          await tx.matchPlayer.create({
-            data: {
+        // Add new players in bulk
+        if (players.length > 0) {
+          await tx.matchPlayer.createMany({
+            data: players.map(player => ({
               matchId,
               playerId: player.playerId,
               teamSide: player.teamSide,
               position: player.position || 1,
-            },
+            })),
           });
         }
       }
@@ -343,6 +356,9 @@ export async function PATCH(request: Request, context: RouteContext) {
       }
 
       return updatedMatch;
+    }, {
+      maxWait: 15000, // 15 seconds max wait
+      timeout: 30000, // 30 seconds total timeout
     });
 
     return NextResponse.json(result);

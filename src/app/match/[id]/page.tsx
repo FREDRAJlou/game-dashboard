@@ -55,22 +55,16 @@ export default function LiveMatchPage({ params }: { params: Promise<{ id: string
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [updating, setUpdating] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
   
   // Individual player scores for doubles
   const [playerScores, setPlayerScores] = useState<Record<number, number>>({});
 
+  // Fetch match data initially
   useEffect(() => {
     fetchMatch();
-    // Only poll for non-admins watching IN_PROGRESS matches
-    // Polling disabled for completed/scheduled matches to reduce load
-    if (!user?.isAdmin && match?.status === 'IN_PROGRESS') {
-      const interval = setInterval(() => {
-        fetchMatch();
-      }, 10000); // Poll every 10 seconds instead of 3
-      return () => clearInterval(interval);
-    }
-  }, [matchId, user?.isAdmin, match?.status]);
+  }, [matchId]);
+
+  // No polling needed - scores are in-memory until completion
 
   const fetchMatch = async () => {
     try {
@@ -79,11 +73,8 @@ export default function LiveMatchPage({ params }: { params: Promise<{ id: string
       
       const data = await response.json();
       setMatch(data);
-      // Only update scores from server if not currently editing
-      if (!isEditing) {
-        setTeam1Score(data.team1Score || 0);
-        setTeam2Score(data.team2Score || 0);
-      }
+      setTeam1Score(data.team1Score || 0);
+      setTeam2Score(data.team2Score || 0);
     } catch (err) {
       console.error('Error fetching match:', err);
       setError(err instanceof Error ? err.message : 'Failed to load match');
@@ -124,28 +115,9 @@ export default function LiveMatchPage({ params }: { params: Promise<{ id: string
 
     if (newTeam1Score < 0 || newTeam2Score < 0) return;
 
-    // Set editing mode to prevent polling from overwriting
-    setIsEditing(true);
+    // Update UI only - scores saved to DB when match completes
     setTeam1Score(newTeam1Score);
     setTeam2Score(newTeam2Score);
-
-    try {
-      await fetch(`/api/matches/${matchId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          team1Score: newTeam1Score,
-          team2Score: newTeam2Score,
-          userId: user.id,
-        }),
-      });
-      // Re-enable polling after successful update
-      setTimeout(() => setIsEditing(false), 1000);
-    } catch (err) {
-      console.error('Error updating score:', err);
-      // Re-enable polling even on error
-      setIsEditing(false);
-    }
   };
 
   const handlePlayerScoreUpdate = async (playerId: number, increment: number) => {
@@ -154,6 +126,7 @@ export default function LiveMatchPage({ params }: { params: Promise<{ id: string
     const newScore = (playerScores[playerId] || 0) + increment;
     if (newScore < 0) return;
 
+    // Update UI only - scores saved to DB when match completes
     setPlayerScores(prev => ({ ...prev, [playerId]: newScore }));
 
     // Also update team total
@@ -166,7 +139,8 @@ export default function LiveMatchPage({ params }: { params: Promise<{ id: string
   };
 
   const handleCompleteMatch = async () => {
-    if (!user?.isAdmin || match?.status !== 'IN_PROGRESS') return;
+    // Allow both admins and scoring admins to complete matches
+    if ((!user?.isAdmin && !user?.isScoringAdmin) || match?.status !== 'IN_PROGRESS') return;
     
     if (team1Score === team2Score) {
       setError('Cannot complete match with tied scores');
@@ -208,6 +182,20 @@ export default function LiveMatchPage({ params }: { params: Promise<{ id: string
     } finally {
       setUpdating(false);
     }
+  };
+
+  const handleResetScores = async () => {
+    // Allow both admins and scoring admins to reset scores
+    if ((!user?.isAdmin && !user?.isScoringAdmin) || match?.status !== 'IN_PROGRESS') return;
+    
+    if (!confirm('Are you sure you want to reset all scores to 0? This cannot be undone.')) {
+      return;
+    }
+
+    // Reset local state immediately - no DB write needed
+    setTeam1Score(0);
+    setTeam2Score(0);
+    setPlayerScores({});
   };
 
   const getTeamDisplay = (teamSide: number) => {
@@ -321,7 +309,7 @@ export default function LiveMatchPage({ params }: { params: Promise<{ id: string
                   color: getGroupColor(1) ? 'white' : 'inherit',
                 }}
               >
-                <Typography variant="h6" sx={{ mb: 1 }}>
+                <Typography variant="h6" sx={{ mb: 1 }} fontWeight="bold">
                   {match.group1?.name || 'Team 1'}
                 </Typography>
                 <Typography variant="body2" sx={{ mb: 2, opacity: 0.9 }}>
@@ -407,7 +395,7 @@ export default function LiveMatchPage({ params }: { params: Promise<{ id: string
                   color: getGroupColor(2) ? 'white' : 'inherit',
                 }}
               >
-                <Typography variant="h6" sx={{ mb: 1 }}>
+                <Typography variant="h6" sx={{ mb: 1 }} fontWeight="bold">
                   {match.group2?.name || 'Team 2'}
                 </Typography>
                 <Typography variant="body2" sx={{ mb: 2, opacity: 0.9 }}>
@@ -477,9 +465,10 @@ export default function LiveMatchPage({ params }: { params: Promise<{ id: string
           </Stack>
 
           {/* Admin Controls */}
-          {user?.isAdmin && (
+          {(user?.isAdmin || user?.isScoringAdmin) && (
             <Box textAlign="center">
-              {match.status === 'SCHEDULED' && (
+              {/* Only full admins can start matches */}
+              {match.status === 'SCHEDULED' && user?.isAdmin && (
                 <Button
                   variant="contained"
                   size="large"
@@ -491,23 +480,43 @@ export default function LiveMatchPage({ params }: { params: Promise<{ id: string
                 </Button>
               )}
 
+              {/* Both admins and scoring admins can complete matches */}
               {match.status === 'IN_PROGRESS' && (
-                <Button
-                  variant="contained"
-                  color="success"
-                  size="large"
-                  startIcon={<CheckCircle />}
-                  onClick={handleCompleteMatch}
-                  disabled={updating || team1Score === team2Score}
-                >
-                  Complete Match
-                </Button>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center">
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    size="large"
+                    onClick={handleResetScores}
+                    disabled={updating || (team1Score === 0 && team2Score === 0)}
+                  >
+                    Reset Scores
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="success"
+                    size="large"
+                    startIcon={<CheckCircle />}
+                    onClick={handleCompleteMatch}
+                    disabled={updating || team1Score === team2Score}
+                  >
+                    Complete Match
+                  </Button>
+                </Stack>
               )}
 
               {team1Score === team2Score && match.status === 'IN_PROGRESS' && (
                 <Typography variant="caption" color="error" display="block" sx={{ mt: 1 }}>
                   Scores must be different to complete the match
                 </Typography>
+              )}
+              
+              {match.status === 'IN_PROGRESS' && (
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  <Typography variant="caption">
+                    💡 Scores are kept in memory and saved to the database when you click "Complete Match"
+                  </Typography>
+                </Alert>
               )}
             </Box>
           )}

@@ -79,3 +79,44 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to create player' }, { status: 500 });
   }
 }
+
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json();
+    const { playerId, isActive } = body;
+
+    if (!playerId) {
+      return NextResponse.json(
+        { error: 'Player ID is required' },
+        { status: 400 }
+      );
+    }
+
+    if (typeof isActive !== 'boolean') {
+      return NextResponse.json(
+        { error: 'isActive must be a boolean' },
+        { status: 400 }
+      );
+    }
+
+    const player = await prisma.player.update({
+      where: { id: playerId },
+      data: { isActive },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            isAdmin: true,
+            isScoringAdmin: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json(player);
+  } catch (error) {
+    console.error('Error updating player:', error);
+    return NextResponse.json({ error: 'Failed to update player' }, { status: 500 });
+  }
+}
