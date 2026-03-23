@@ -120,12 +120,16 @@ export default function DashboardPage() {
   const completedMatches = matches.filter((m) => m.status === 'COMPLETED');
 
   const formatDate = (date: string | Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
+    const d = new Date(date);
+    // Format in local timezone with explicit 12-hour format
+    return d.toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
+      hour12: true,
+      timeZoneName: 'short', // Shows timezone abbreviation (e.g., PST, EST)
     });
   };
 
