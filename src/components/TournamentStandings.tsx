@@ -140,8 +140,11 @@ export default function TournamentStandings({ tournamentId }: TournamentStanding
     
     const totalPoints = groupData.standings.reduce((sum: number, s: PlayerStanding) => sum + s.tournamentPoints, 0);
     const totalScored = groupData.standings.reduce((sum: number, s: PlayerStanding) => sum + s.totalGamePointsScored, 0);
-    const avgWinRate = groupData.standings.length > 0
-      ? groupData.standings.reduce((sum: number, s: PlayerStanding) => sum + s.winRate, 0) / groupData.standings.length
+    
+    // Calculate average win rate ONLY for players who have played matches
+    const playersWithMatches = groupData.standings.filter((s: PlayerStanding) => s.matchesPlayed > 0);
+    const avgWinRate = playersWithMatches.length > 0
+      ? playersWithMatches.reduce((sum: number, s: PlayerStanding) => sum + s.winRate, 0) / playersWithMatches.length
       : 0;
     
     // Find top performer (highest tournament points, then wins)
