@@ -55,7 +55,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, description, matchType, startDate, endDate, status, createdById } = body;
+    const { name, description, matchType, startDate, endDate, status, createdById, pointsForWin, pointsForLoss } = body;
 
     if (!name || !startDate || !createdById) {
       return NextResponse.json(
@@ -73,6 +73,8 @@ export async function POST(request: Request) {
         endDate: endDate ? new Date(endDate) : null,
         status: status || 'DRAFT',
         createdById,
+        pointsForWin: pointsForWin ?? 3,
+        pointsForLoss: pointsForLoss ?? 0,
       },
       include: {
         createdBy: {

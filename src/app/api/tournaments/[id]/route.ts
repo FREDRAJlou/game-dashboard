@@ -88,7 +88,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
 
     const body = await request.json();
-    const { name, description, startDate, endDate, status } = body;
+    const { name, description, startDate, endDate, status, pointsForWin, pointsForLoss } = body;
 
     const tournament = await prisma.tournament.update({
       where: { id: tournamentId },
@@ -98,6 +98,8 @@ export async function PATCH(request: Request, context: RouteContext) {
         ...(startDate && { startDate: new Date(startDate) }),
         ...(endDate !== undefined && { endDate: endDate ? new Date(endDate) : null }),
         ...(status && { status }),
+        ...(pointsForWin !== undefined && { pointsForWin }),
+        ...(pointsForLoss !== undefined && { pointsForLoss }),
       },
       include: {
         createdBy: {

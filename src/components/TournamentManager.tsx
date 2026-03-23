@@ -28,6 +28,8 @@ interface Tournament {
   startDate: string;
   endDate?: string;
   status: 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
+  pointsForWin?: number;
+  pointsForLoss?: number;
 }
 
 interface TournamentManagerProps {
@@ -51,6 +53,8 @@ export default function TournamentManager({
   const [startDate, setStartDate] = useState<Date | null>(new Date());
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [status, setStatus] = useState<'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'ARCHIVED'>('DRAFT');
+  const [pointsForWin, setPointsForWin] = useState<number>(3);
+  const [pointsForLoss, setPointsForLoss] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -63,6 +67,8 @@ export default function TournamentManager({
       setStartDate(new Date(tournament.startDate));
       setEndDate(tournament.endDate ? new Date(tournament.endDate) : null);
       setStatus(tournament.status);
+      setPointsForWin(tournament.pointsForWin ?? 3);
+      setPointsForLoss(tournament.pointsForLoss ?? 0);
     } else {
       resetForm();
     }
@@ -75,6 +81,8 @@ export default function TournamentManager({
     setStartDate(new Date());
     setEndDate(null);
     setStatus('DRAFT');
+    setPointsForWin(3);
+    setPointsForLoss(0);
     setError(null);
     setSuccess(null);
   };
@@ -111,6 +119,8 @@ export default function TournamentManager({
           startDate: startDate.toISOString(),
           endDate: endDate?.toISOString() || null,
           status,
+          pointsForWin,
+          pointsForLoss,
           ...(tournament ? {} : { createdById: userId }),
         }),
       });
@@ -189,6 +199,32 @@ export default function TournamentManager({
                 </Box>
               )}
             </FormControl>
+
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField
+                label="Points for Win"
+                type="number"
+                value={pointsForWin}
+                onChange={(e) => setPointsForWin(Math.max(0, parseInt(e.target.value) || 0))}
+                fullWidth
+                required
+                disabled={loading}
+                inputProps={{ min: 0, step: 1 }}
+                helperText="Tournament points awarded for winning a match"
+              />
+
+              <TextField
+                label="Points for Loss"
+                type="number"
+                value={pointsForLoss}
+                onChange={(e) => setPointsForLoss(Math.max(0, parseInt(e.target.value) || 0))}
+                fullWidth
+                required
+                disabled={loading}
+                inputProps={{ min: 0, step: 1 }}
+                helperText="Tournament points awarded for losing a match"
+              />
+            </Box>
 
             <DateTimePicker
               label="Start Date"
