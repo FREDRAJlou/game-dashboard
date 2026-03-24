@@ -25,6 +25,7 @@ import HomeIcon from '@mui/icons-material/Home';
 import TournamentManager from '@/components/TournamentManager';
 import GroupManager from '@/components/GroupManager';
 import TournamentStandings from '@/components/TournamentStandings';
+import PlayoffManager from '@/components/PlayoffManager';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 
@@ -61,6 +62,7 @@ export default function TournamentsPage() {
   const [error, setError] = useState<string | null>(null);
   const [tournamentDialogOpen, setTournamentDialogOpen] = useState(false);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
+  const [playoffDialogOpen, setPlayoffDialogOpen] = useState(false);
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   const [selectedTournamentId, setSelectedTournamentId] = useState<number | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
@@ -111,6 +113,12 @@ export default function TournamentsPage() {
     setSelectedTournamentId(tournamentId);
     setSelectedGroup(null);
     setGroupDialogOpen(true);
+  };
+
+  const handleOpenPlayoffs = (tournament: Tournament) => {
+    setSelectedTournament(tournament);
+    setSelectedTournamentId(tournament.id);
+    setPlayoffDialogOpen(true);
   };
 
   const handleEditGroup = (group: Group, tournamentId: number) => {
@@ -310,14 +318,28 @@ export default function TournamentsPage() {
                       View Standings
                     </Button>
                     {user.isAdmin && (
-                      <Button
-                        size="small"
-                        startIcon={<GroupsIcon />}
-                        onClick={() => handleCreateGroup(tournament.id)}
-                        sx={{ width: { xs: '100%', sm: 'auto' } }}
-                      >
-                        Add Group
-                      </Button>
+                      <>
+                        <Button
+                          size="small"
+                          startIcon={<GroupsIcon />}
+                          onClick={() => handleCreateGroup(tournament.id)}
+                          sx={{ width: { xs: '100%', sm: 'auto' } }}
+                        >
+                          Add Group
+                        </Button>
+                        {tournament.groups.length === 2 && tournament.status === 'ACTIVE' && (
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<EmojiEventsIcon />}
+                            onClick={() => handleOpenPlayoffs(tournament)}
+                            sx={{ width: { xs: '100%', sm: 'auto' } }}
+                            color="warning"
+                          >
+                            Playoffs
+                          </Button>
+                        )}
+                      </>
                     )}
                   </Stack>
                   {user.isAdmin && (
@@ -368,6 +390,20 @@ export default function TournamentsPage() {
         onSuccess={fetchTournaments}
         group={selectedGroup}
         tournamentId={selectedTournamentId || undefined}
+      />
+
+      <PlayoffManager
+        open={playoffDialogOpen}
+        onClose={() => {
+          setPlayoffDialogOpen(false);
+          setSelectedTournament(null);
+          setSelectedTournamentId(null);
+        }}
+        onSuccess={fetchTournaments}
+        tournamentId={selectedTournamentId || 0}
+        groups={selectedTournament?.groups || []}
+        userId={user.id}
+        matchType={selectedTournament?.matchType || 'SINGLES'}
       />
     </Container>
   );
