@@ -49,6 +49,8 @@ export async function GET(request: Request, context: RouteContext) {
           select: {
             id: true,
             scheduledAt: true,
+            team1Score: true,
+            team2Score: true,
           },
         },
       },
@@ -67,6 +69,7 @@ export async function GET(request: Request, context: RouteContext) {
       losses: number;
       tournamentPoints: number;
       gamePointsScored: number;
+      gamePointsConceded: number;
       qualified: boolean;
     }>();
 
@@ -90,6 +93,7 @@ export async function GET(request: Request, context: RouteContext) {
           losses: 0,
           tournamentPoints: 0,
           gamePointsScored: 0,
+          gamePointsConceded: 0,
           qualified: perf.team.qualifiedForSemis || false,
         });
       }
@@ -100,23 +104,33 @@ export async function GET(request: Request, context: RouteContext) {
       else stats.losses++;
       stats.tournamentPoints += perf.tournamentPoints;
       stats.gamePointsScored += perf.gamePoints;
+      
+      // Calculate points conceded from opponent's score
+      const opponentScore = perf.teamSide === 1 
+        ? (perf.match.team2Score || 0) 
+        : (perf.match.team1Score || 0);
+      stats.gamePointsConceded += opponentScore;
     });
 
-    // Convert to array and calculate win rates
+    // Convert to array and calculate win rates and point differential
     const standings = Array.from(teamStatsMap.values())
       .map((stats) => ({
         ...stats,
         winRate: stats.matchesPlayed > 0 ? (stats.wins / stats.matchesPlayed) * 100 : 0,
+        pointDifferential: stats.gamePointsScored - stats.gamePointsConceded,
       }))
       .sort((a, b) => {
-        // Sort by tournament points desc, then wins desc, then win rate desc
+        // Sort by: tournament points desc, wins desc, win rate desc, point differential desc
         if (b.tournamentPoints !== a.tournamentPoints) {
           return b.tournamentPoints - a.tournamentPoints;
         }
         if (b.wins !== a.wins) {
           return b.wins - a.wins;
         }
-        return b.winRate - a.winRate;
+        if (b.winRate !== a.winRate) {
+          return b.winRate - a.winRate;
+        }
+        return b.pointDifferential - a.pointDifferential;
       })
       .map((stats, index) => ({
         ...stats,

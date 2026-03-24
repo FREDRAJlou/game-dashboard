@@ -57,6 +57,12 @@ export async function POST(request: Request, context: RouteContext) {
           },
           include: {
             player: true,
+            match: {
+              select: {
+                team1Score: true,
+                team2Score: true,
+              },
+            },
           },
         });
 
@@ -68,6 +74,8 @@ export async function POST(request: Request, context: RouteContext) {
           wins: number;
           winRate: number;
           matchesPlayed: number;
+          pointsScored: number;
+          pointsConceded: number;
         }>();
 
         playerPerformances.forEach((perf) => {
@@ -79,6 +87,8 @@ export async function POST(request: Request, context: RouteContext) {
               wins: 0,
               winRate: 0,
               matchesPlayed: 0,
+              pointsScored: 0,
+              pointsConceded: 0,
             });
           }
 
@@ -86,18 +96,27 @@ export async function POST(request: Request, context: RouteContext) {
           stats.tournamentPoints += perf.tournamentPoints;
           stats.matchesPlayed++;
           if (perf.won) stats.wins++;
+          stats.pointsScored += perf.gamePoints;
+          
+          // Calculate points conceded from opponent's score
+          const opponentScore = perf.teamSide === 1 
+            ? (perf.match.team2Score || 0) 
+            : (perf.match.team1Score || 0);
+          stats.pointsConceded += opponentScore;
         });
 
-        // Sort by tournament points, then wins, then win rate
+        // Sort by tournament points, then wins, then win rate, then point differential
         const sortedPlayers = Array.from(playerStatsMap.values())
           .map(stats => ({
             ...stats,
             winRate: stats.matchesPlayed > 0 ? (stats.wins / stats.matchesPlayed) * 100 : 0,
+            pointDifferential: stats.pointsScored - stats.pointsConceded,
           }))
           .sort((a, b) => {
             if (b.tournamentPoints !== a.tournamentPoints) return b.tournamentPoints - a.tournamentPoints;
             if (b.wins !== a.wins) return b.wins - a.wins;
-            return b.winRate - a.winRate;
+            if (b.winRate !== a.winRate) return b.winRate - a.winRate;
+            return b.pointDifferential - a.pointDifferential;
           });
 
         // Mark top 2 as qualified
@@ -153,6 +172,12 @@ export async function POST(request: Request, context: RouteContext) {
                 },
               },
             },
+            match: {
+              select: {
+                team1Score: true,
+                team2Score: true,
+              },
+            },
           },
         });
 
@@ -165,6 +190,8 @@ export async function POST(request: Request, context: RouteContext) {
           wins: number;
           winRate: number;
           matchesPlayed: number;
+          pointsScored: number;
+          pointsConceded: number;
         }>();
 
         teamPerformances.forEach((perf) => {
@@ -177,6 +204,8 @@ export async function POST(request: Request, context: RouteContext) {
               wins: 0,
               winRate: 0,
               matchesPlayed: 0,
+              pointsScored: 0,
+              pointsConceded: 0,
             });
           }
 
@@ -184,18 +213,27 @@ export async function POST(request: Request, context: RouteContext) {
           stats.tournamentPoints += perf.tournamentPoints;
           stats.matchesPlayed++;
           if (perf.won) stats.wins++;
+          stats.pointsScored += perf.gamePoints;
+          
+          // Calculate points conceded from opponent's score
+          const opponentScore = perf.teamSide === 1 
+            ? (perf.match.team2Score || 0) 
+            : (perf.match.team1Score || 0);
+          stats.pointsConceded += opponentScore;
         });
 
-        // Sort by tournament points, then wins, then win rate
+        // Sort by tournament points, then wins, then win rate, then point differential
         const sortedTeams = Array.from(teamStatsMap.values())
           .map(stats => ({
             ...stats,
             winRate: stats.matchesPlayed > 0 ? (stats.wins / stats.matchesPlayed) * 100 : 0,
+            pointDifferential: stats.pointsScored - stats.pointsConceded,
           }))
           .sort((a, b) => {
             if (b.tournamentPoints !== a.tournamentPoints) return b.tournamentPoints - a.tournamentPoints;
             if (b.wins !== a.wins) return b.wins - a.wins;
-            return b.winRate - a.winRate;
+            if (b.winRate !== a.winRate) return b.winRate - a.winRate;
+            return b.pointDifferential - a.pointDifferential;
           });
 
         // Mark top 2 teams as qualified

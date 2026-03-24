@@ -36,6 +36,7 @@ interface TeamStanding {
   winRate: number;
   tournamentPoints: number;
   gamePointsScored: number;
+  pointDifferential: number;
   qualified: boolean;
 }
 
@@ -125,6 +126,7 @@ export default function TeamLeaderboard({
             <TableCell align="center" sx={{ fontWeight: 'bold' }}>Win %</TableCell>
             <TableCell align="center" sx={{ fontWeight: 'bold' }}>Pts</TableCell>
             <TableCell align="center" sx={{ fontWeight: 'bold' }}>Scored</TableCell>
+            <TableCell align="center" sx={{ fontWeight: 'bold' }}>Diff</TableCell>
             {showQualified && (
               <TableCell align="center" sx={{ fontWeight: 'bold' }}>Status</TableCell>
             )}
@@ -216,6 +218,15 @@ export default function TeamLeaderboard({
                 </Typography>
               </TableCell>
               <TableCell align="center">{standing.gamePointsScored}</TableCell>
+              <TableCell align="center">
+                <Typography 
+                  variant="body2" 
+                  fontWeight="medium"
+                  color={standing.pointDifferential > 0 ? 'success.main' : standing.pointDifferential < 0 ? 'error.main' : 'text.secondary'}
+                >
+                  {standing.pointDifferential > 0 ? '+' : ''}{standing.pointDifferential}
+                </Typography>
+              </TableCell>
               
               {showQualified && (
                 <TableCell align="center">
