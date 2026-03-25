@@ -65,9 +65,30 @@ export default function TournamentStandings({ tournamentId }: TournamentStanding
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [matches, setMatches] = useState<any[]>([]);
+  const [matchesLoading, setMatchesLoading] = useState(true);
 
   useEffect(() => {
     fetchStandings();
+  }, [tournamentId]);
+
+  useEffect(() => {
+    const fetchMatches = async () => {
+      try {
+        setMatchesLoading(true);
+        const response = await fetch('/api/matches');
+        const allMatches = await response.json();
+        const tournamentMatches = allMatches
+          .filter((m: any) => m.tournamentId === tournamentId)
+          .sort((a: any, b: any) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime());
+        setMatches(tournamentMatches);
+      } catch (error) {
+        console.error('Error fetching matches:', error);
+      } finally {
+        setMatchesLoading(false);
+      }
+    };
+    fetchMatches();
   }, [tournamentId]);
 
   const fetchStandings = async () => {
@@ -449,172 +470,123 @@ export default function TournamentStandings({ tournamentId }: TournamentStanding
           
           {data.totalMatches === 0 ? (
             <Alert severity="info">No matches in this tournament yet</Alert>
+          ) : matchesLoading ? (
+            <Box display="flex" justifyContent="center" p={3}>
+              <CircularProgress size={30} />
+            </Box>
           ) : (
-            <Stack spacing={2}>
-              {/* Group matches by status */}
-              {(() => {
-                const allMatches = data.groupStandings.flatMap((gs: GroupStanding) => 
-                  gs.standings.flatMap((standing: PlayerStanding) => [])
-                );
-                
-                // Fetch all matches for this tournament
-                const [matches, setMatches] = useState<any[]>([]);
-                const [matchesLoading, setMatchesLoading] = useState(true);
-                
-                useEffect(() => {
-                  const fetchMatches = async () => {
-                    try {
-                      const response = await fetch('/api/matches');
-                      const allMatches = await response.json();
-                      const tournamentMatches = allMatches
-                        .filter((m: any) => m.tournamentId === tournamentId)
-                        .sort((a: any, b: any) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime());
-                      setMatches(tournamentMatches);
-                    } catch (error) {
-                      console.error('Error fetching matches:', error);
-                    } finally {
-                      setMatchesLoading(false);
-                    }
-                  };
-                  fetchMatches();
-                }, []);
+            (() => {
+              // Group by status
+              const scheduled = matches.filter(m => m.status === 'SCHEDULED');
+              const inProgress = matches.filter(m => m.status === 'IN_PROGRESS');
+              const completed = matches.filter(m => m.status === 'COMPLETED');
 
-                if (matchesLoading) {
-                  return (
-                    <Box display="flex" justifyContent="center" p={3}>
-                      <CircularProgress size={30} />
+              return (
+                <Stack spacing={3} sx={{ maxHeight: '600px', overflowY: 'auto', pr: 1 }}>
+                  {inProgress.length > 0 && (
+                    <Box>
+                      <Typography variant="subtitle2" fontWeight="600" color="warning.main" sx={{ mb: 1 }}>
+                        In Progress ({inProgress.length})
+                      </Typography>
+                      <Stack spacing={1}>
+                        {inProgress.map((match: any) => (
+                          <Card key={match.id} variant="outlined" sx={{ bgcolor: 'warning.light', borderColor: 'warning.main' }}>
+                            <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                              <Stack spacing={1}>
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                  <Chip label={match.type} size="small" sx={{ height: 20, fontSize: '0.7rem' }} />
+                                  {match.stage && match.stage !== 'GROUP_STAGE' && (
+                                    <Chip label={match.stage.replace('_', ' ')} size="small" color="secondary" sx={{ height: 20, fontSize: '0.7rem' }} />
+                                  )}
+                                  <Chip label="LIVE" color="warning" size="small" sx={{ ml: 'auto' }} />
+                                </Stack>
+                                <Typography variant="body1" fontWeight="600">
+                                  {match.team1} vs {match.team2}
+                                </Typography>
+                                {match.team1Score !== null && match.team2Score !== null && (
+                                  <Typography variant="h6" color="primary" fontWeight="bold">
+                                    {match.team1Score} - {match.team2Score}
+                                  </Typography>
+                                )}
+                              </Stack>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </Stack>
                     </Box>
-                  );
-                }
+                  )}
 
-                // Group by status
-                const scheduled = matches.filter(m => m.status === 'SCHEDULED');
-                const inProgress = matches.filter(m => m.status === 'IN_PROGRESS');
-                const completed = matches.filter(m => m.status === 'COMPLETED');
-
-                return (
-                  <>
-                    {inProgress.length > 0 && (
-                      <Box>
-                        <Typography variant="subtitle2" fontWeight="600" color="warning.main" sx={{ mb: 1 }}>
-                          In Progress ({inProgress.length})
-                        </Typography>
-                        <Stack spacing={1}>
-                          {inProgress.map((match: any) => (
-                            <Card key={match.id} variant="outlined" sx={{ bgcolor: 'warning.light', borderColor: 'warning.main' }}>
-                              <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
-                                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                  <Box sx={{ flex: 1 }}>
-                                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-                                      <Chip label={match.type} size="small" sx={{ height: 18, fontSize: '0.65rem' }} />
-                                      {match.stage && match.stage !== 'GROUP_STAGE' && (
-                                        <Chip label={match.stage.replace('_', ' ')} size="small" color="secondary" sx={{ height: 18, fontSize: '0.65rem' }} />
-                                      )}
-                                    </Stack>
-                                    <Typography variant="body2" fontWeight="600">
-                                      {match.team1} vs {match.team2}
-                                    </Typography>
-                                    {match.team1Score !== null && match.team2Score !== null && (
-                                      <Typography variant="body2" color="primary" fontWeight="bold">
-                                        {match.team1Score} - {match.team2Score}
-                                      </Typography>
-                                    )}
-                                  </Box>
-                                  <Chip label="LIVE" color="warning" size="small" />
+                  {scheduled.length > 0 && (
+                    <Box>
+                      <Typography variant="subtitle2" fontWeight="600" color="info.main" sx={{ mb: 1 }}>
+                        Scheduled ({scheduled.length})
+                      </Typography>
+                      <Stack spacing={1}>
+                        {scheduled.map((match: any) => (
+                          <Card key={match.id} variant="outlined" sx={{ bgcolor: 'background.default' }}>
+                            <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                              <Stack spacing={1}>
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                  <Chip label={match.type} size="small" sx={{ height: 20, fontSize: '0.7rem' }} />
+                                  {match.stage && match.stage !== 'GROUP_STAGE' && (
+                                    <Chip label={match.stage.replace('_', ' ')} size="small" color="secondary" sx={{ height: 20, fontSize: '0.7rem' }} />
+                                  )}
+                                  <Chip label="SCHEDULED" color="info" size="small" variant="outlined" sx={{ ml: 'auto' }} />
                                 </Stack>
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </Stack>
-                      </Box>
-                    )}
+                                <Typography variant="body1" fontWeight="600">
+                                  {match.team1} vs {match.team2}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {new Date(match.scheduledAt).toLocaleDateString('en-US', { 
+                                    month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' 
+                                  })}
+                                </Typography>
+                              </Stack>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </Stack>
+                    </Box>
+                  )}
 
-                    {scheduled.length > 0 && (
-                      <Box>
-                        <Typography variant="subtitle2" fontWeight="600" color="info.main" sx={{ mb: 1 }}>
-                          Scheduled ({scheduled.length})
-                        </Typography>
-                        <Stack spacing={1}>
-                          {scheduled.slice(0, 10).map((match: any) => (
-                            <Card key={match.id} variant="outlined" sx={{ bgcolor: 'background.default' }}>
-                              <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
-                                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                  <Box sx={{ flex: 1 }}>
-                                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-                                      <Chip label={match.type} size="small" sx={{ height: 18, fontSize: '0.65rem' }} />
-                                      {match.stage && match.stage !== 'GROUP_STAGE' && (
-                                        <Chip label={match.stage.replace('_', ' ')} size="small" color="secondary" sx={{ height: 18, fontSize: '0.65rem' }} />
-                                      )}
-                                    </Stack>
-                                    <Typography variant="body2" fontWeight="600">
-                                      {match.team1} vs {match.team2}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                      {new Date(match.scheduledAt).toLocaleDateString('en-US', { 
-                                        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-                                      })}
-                                    </Typography>
-                                  </Box>
-                                  <Chip label="SCHEDULED" color="info" size="small" variant="outlined" />
+                  {completed.length > 0 && (
+                    <Box>
+                      <Typography variant="subtitle2" fontWeight="600" color="success.main" sx={{ mb: 1 }}>
+                        Completed ({completed.length})
+                      </Typography>
+                      <Stack spacing={1}>
+                        {completed.map((match: any) => (
+                          <Card key={match.id} variant="outlined" sx={{ bgcolor: 'background.default' }}>
+                            <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                              <Stack spacing={1}>
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                  <Chip label={match.type} size="small" sx={{ height: 20, fontSize: '0.7rem' }} />
+                                  {match.stage && match.stage !== 'GROUP_STAGE' && (
+                                    <Chip label={match.stage.replace('_', ' ')} size="small" color="secondary" sx={{ height: 20, fontSize: '0.7rem' }} />
+                                  )}
+                                  <Chip label="COMPLETED" color="success" size="small" sx={{ ml: 'auto' }} />
                                 </Stack>
-                              </CardContent>
-                            </Card>
-                          ))}
-                          {scheduled.length > 10 && (
-                            <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', pt: 0.5 }}>
-                              + {scheduled.length - 10} more scheduled matches
-                            </Typography>
-                          )}
-                        </Stack>
-                      </Box>
-                    )}
-
-                    {completed.length > 0 && (
-                      <Box>
-                        <Typography variant="subtitle2" fontWeight="600" color="success.main" sx={{ mb: 1 }}>
-                          Completed ({completed.length})
-                        </Typography>
-                        <Stack spacing={1}>
-                          {completed.slice(0, 10).map((match: any) => (
-                            <Card key={match.id} variant="outlined" sx={{ bgcolor: 'background.default' }}>
-                              <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
-                                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                  <Box sx={{ flex: 1 }}>
-                                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-                                      <Chip label={match.type} size="small" sx={{ height: 18, fontSize: '0.65rem' }} />
-                                      {match.stage && match.stage !== 'GROUP_STAGE' && (
-                                        <Chip label={match.stage.replace('_', ' ')} size="small" color="secondary" sx={{ height: 18, fontSize: '0.65rem' }} />
-                                      )}
-                                    </Stack>
-                                    <Typography variant="body2" fontWeight="600">
-                                      {match.team1} vs {match.team2}
-                                    </Typography>
-                                    <Typography variant="h6" color="primary" fontWeight="bold">
-                                      {match.team1Score} - {match.team2Score}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                      {new Date(match.scheduledAt).toLocaleDateString('en-US', { 
-                                        month: 'short', day: 'numeric' 
-                                      })}
-                                    </Typography>
-                                  </Box>
-                                  <Chip label="COMPLETED" color="success" size="small" />
-                                </Stack>
-                              </CardContent>
-                            </Card>
-                          ))}
-                          {completed.length > 10 && (
-                            <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', pt: 0.5 }}>
-                              + {completed.length - 10} more completed matches
-                            </Typography>
-                          )}
-                        </Stack>
-                      </Box>
-                    )}
-                  </>
-                );
-              })()}
-            </Stack>
+                                <Typography variant="body1" fontWeight="600">
+                                  {match.team1} vs {match.team2}
+                                </Typography>
+                                <Typography variant="h5" color="primary" fontWeight="bold">
+                                  {match.team1Score} - {match.team2Score}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {new Date(match.scheduledAt).toLocaleDateString('en-US', { 
+                                    month: 'short', day: 'numeric', year: 'numeric'
+                                  })}
+                                </Typography>
+                              </Stack>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </Stack>
+                    </Box>
+                  )}
+                </Stack>
+              );
+            })()
           )}
         </Box>
       </Box>

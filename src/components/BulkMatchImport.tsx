@@ -38,7 +38,6 @@ interface BulkMatchImportProps {
 }
 
 interface ParsedMatch {
-  session: number;
   player1: string;
   player2: string;
   group1: string;
@@ -76,8 +75,8 @@ export default function BulkMatchImport({
         .slice(1) // Skip header
         .filter((line) => line.trim())
         .map((line) => {
-          const [session, match] = line.split('\t').map((s) => s.trim());
-          return { session: parseInt(session), match };
+          const [group1, player1, group2, player2] = line.split('\t').map((s) => s.trim());
+          return { group1, player1, group2, player2 };
         });
 
       setPreview(rows);
@@ -144,14 +143,17 @@ export default function BulkMatchImport({
         return (
           <Box>
             <Typography variant="body1" paragraph>
-              Paste your CSV data with two columns: <strong>Session</strong> and <strong>Match</strong>
+              Paste your match data in tab-separated format
             </Typography>
             <Alert severity="info" sx={{ mb: 2 }}>
               <Typography variant="body2" fontWeight="bold">
-                Format: Session [TAB] PlayerName1 (GroupLetter) vs PlayerName2 (GroupLetter)
+                Format: Group1 [TAB] Player1 [TAB] Group2 [TAB] Player2
               </Typography>
               <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                Example: 1 [TAB] Rahul (A) vs Bharani (B)
+                <strong>Important:</strong> Use exact group names from your tournament
+              </Typography>
+              <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+                Example: Akatsuki [TAB] Rahul [TAB] Uchiha [TAB] Bharani
               </Typography>
             </Alert>
 
@@ -161,10 +163,10 @@ export default function BulkMatchImport({
               rows={12}
               value={csvData}
               onChange={(e) => setCsvData(e.target.value)}
-              placeholder="Session	Table 1 Match
-1	Rahul (A) vs Bharani (B)
-2	Arun (A) vs Nawaz (B)
-3	Rahul (A) vs Mahesh (B)
+              placeholder="Group1	Player1	Group2	Player2
+Akatsuki	Rahul	Uchiha	Bharani
+Akatsuki	Arun	Uchiha	Nawaz
+Uchiha	Bharani	Black Zetsu	Santhosh
 ..."
               variant="outlined"
               sx={{ fontFamily: 'monospace', fontSize: '0.9rem' }}
@@ -194,20 +196,43 @@ export default function BulkMatchImport({
               <Table stickyHeader size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell><strong>Session</strong></TableCell>
-                    <TableCell><strong>Match</strong></TableCell>
+                    <TableCell><strong>Player 1</strong></TableCell>
+                    <TableCell><strong>Group 1</strong></TableCell>
+                    <TableCell align="center"><strong>VS</strong></TableCell>
+                    <TableCell><strong>Player 2</strong></TableCell>
+                    <TableCell><strong>Group 2</strong></TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {preview.slice(0, 20).map((row, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell>{row.session}</TableCell>
-                      <TableCell>{row.match}</TableCell>
-                    </TableRow>
-                  ))}
+                  {preview.slice(0, 20).map((row, idx) => {
+                    if (row.group1 && row.player1 && row.group2 && row.player2) {
+                      return (
+                        <TableRow key={idx}>
+                          <TableCell>{row.player1}</TableCell>
+                          <TableCell>
+                            <Chip label={row.group1} size="small" color="primary" variant="outlined" />
+                          </TableCell>
+                          <TableCell align="center">vs</TableCell>
+                          <TableCell>{row.player2}</TableCell>
+                          <TableCell>
+                            <Chip label={row.group2} size="small" color="secondary" variant="outlined" />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
+                    return (
+                      <TableRow key={idx}>
+                        <TableCell colSpan={5}>
+                          <Typography variant="caption" color="error">
+                            Invalid format in row {idx + 1}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                   {preview.length > 20 && (
                     <TableRow>
-                      <TableCell colSpan={2} align="center">
+                      <TableCell colSpan={5} align="center">
                         <Typography variant="caption" color="text.secondary">
                           ... and {preview.length - 20} more
                         </Typography>
@@ -263,24 +288,24 @@ export default function BulkMatchImport({
                       <Table size="small">
                         <TableHead>
                           <TableRow>
-                            <TableCell>Session</TableCell>
-                            <TableCell>Player 1</TableCell>
-                            <TableCell>Player 2</TableCell>
-                            <TableCell>Groups</TableCell>
+                            <TableCell><strong>Player 1</strong></TableCell>
+                            <TableCell><strong>Group 1</strong></TableCell>
+                            <TableCell align="center"><strong>VS</strong></TableCell>
+                            <TableCell><strong>Player 2</strong></TableCell>
+                            <TableCell><strong>Group 2</strong></TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
                           {importResult.matches.slice(0, 10).map((match: ParsedMatch) => (
                             <TableRow key={match.id}>
-                              <TableCell>{match.session}</TableCell>
                               <TableCell>{match.player1}</TableCell>
+                              <TableCell>
+                                <Chip label={match.group1} size="small" color="primary" variant="outlined" />
+                              </TableCell>
+                              <TableCell align="center">vs</TableCell>
                               <TableCell>{match.player2}</TableCell>
                               <TableCell>
-                                <Stack direction="row" spacing={0.5}>
-                                  <Chip label={match.group1} size="small" />
-                                  <Typography variant="caption">vs</Typography>
-                                  <Chip label={match.group2} size="small" />
-                                </Stack>
+                                <Chip label={match.group2} size="small" color="secondary" variant="outlined" />
                               </TableCell>
                             </TableRow>
                           ))}

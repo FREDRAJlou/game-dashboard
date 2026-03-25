@@ -2,8 +2,10 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 type BulkMatchRow = {
-  session: number;
-  match: string;
+  group1: string;
+  player1: string;
+  group2: string;
+  player2: string;
 };
 
 // POST /api/matches/bulk-import - Import multiple matches from CSV data
@@ -19,14 +21,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // Parse CSV data
+    // Parse CSV data - Format: Group1 [TAB] Player1 [TAB] Group2 [TAB] Player2
     const rows = csvData
       .split('\n')
       .slice(1) // Skip header
       .filter((line: string) => line.trim())
       .map((line: string) => {
-        const [session, match] = line.split('\t').map((s: string) => s.trim());
-        return { session: parseInt(session), match };
+        const [group1, player1, group2, player2] = line.split('\t').map((s: string) => s.trim());
+        return { group1, player1, group2, player2 };
       });
 
     if (rows.length === 0) {
@@ -53,16 +55,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Tournament not found' }, { status: 404 });
     }
 
-    // Create a map of player names to their details
-    const playerMap = new Map<string, { id: number; groupId: number; groupName: string }>();
+    // Create a map of group names to group IDs (case-insensitive)
+    const groupMap = new Map<string, { id: number; name: string }>();
+    tournament.groups.forEach((group) => {
+      groupMap.set(group.name.toLowerCase(), { id: group.id, name: group.name });
+    });
+
+    // Create a map of player names to their player IDs (all players in all groups)
+    const allPlayers = new Map<string, number>();
     tournament.groups.forEach((group) => {
       group.members.forEach((member) => {
         const playerName = member.player.name.toLowerCase();
-        playerMap.set(playerName, {
-          id: member.player.id,
-          groupId: group.id,
-          groupName: group.name,
-        });
+        allPlayers.set(playerName, member.player.id);
       });
     });
 
@@ -70,43 +74,54 @@ export async function POST(request: Request) {
     const matchesToCreate = [];
     const errors = [];
 
-    for (const row of rows) {
+    for (let index = 0; index < rows.length; index++) {
+      const row = rows[index];
       try {
-        // Parse match string: "PlayerName1 (GroupLetter) vs PlayerName2 (GroupLetter)"
-        const matchRegex = /^(.+?)\s*\(([A-Z])\)\s*vs\s*(.+?)\s*\(([A-Z])\)$/i;
-        const match = row.match.match(matchRegex);
-
-        if (!match) {
-          errors.push(`Session ${row.session}: Invalid match format - ${row.match}`);
+        if (!row.group1 || !row.player1 || !row.group2 || !row.player2) {
+          errors.push(`Row ${index + 1}: Missing required fields (Group1, Player1, Group2, Player2)`);
           continue;
         }
 
-        const player1Name = match[1].trim().toLowerCase();
-        const group1Letter = match[2];
-        const player2Name = match[3].trim().toLowerCase();
-        const group2Letter = match[4];
+        const player1Name = row.player1.trim().toLowerCase();
+        const group1Name = row.group1.trim().toLowerCase();
+        const player2Name = row.player2.trim().toLowerCase();
+        const group2Name = row.group2.trim().toLowerCase();
 
-        const player1 = playerMap.get(player1Name);
-        const player2 = playerMap.get(player2Name);
+        // Look up player IDs
+        const player1Id = allPlayers.get(player1Name);
+        const player2Id = allPlayers.get(player2Name);
 
-        if (!player1) {
-          errors.push(`Session ${row.session}: Player "${match[1]}" not found`);
+        if (!player1Id) {
+          errors.push(`Row ${index + 1}: Player "${row.player1}" not found in tournament`);
           continue;
         }
 
-        if (!player2) {
-          errors.push(`Session ${row.session}: Player "${match[3]}" not found`);
+        if (!player2Id) {
+          errors.push(`Row ${index + 1}: Player "${row.player2}" not found in tournament`);
+          continue;
+        }
+
+        // Look up groups
+        const group1 = groupMap.get(group1Name);
+        const group2 = groupMap.get(group2Name);
+
+        if (!group1) {
+          errors.push(`Row ${index + 1}: Group "${row.group1}" not found in tournament`);
+          continue;
+        }
+
+        if (!group2) {
+          errors.push(`Row ${index + 1}: Group "${row.group2}" not found in tournament`);
           continue;
         }
 
         matchesToCreate.push({
-          session: row.session,
-          player1: { ...player1, name: match[1] },
-          player2: { ...player2, name: match[3] },
-          originalText: row.match,
+          player1: { id: player1Id, name: row.player1.trim(), groupId: group1.id, groupName: group1.name },
+          player2: { id: player2Id, name: row.player2.trim(), groupId: group2.id, groupName: group2.name },
+          originalText: `${row.player1} (${row.group1}) vs ${row.player2} (${row.group2})`,
         });
       } catch (err) {
-        errors.push(`Session ${row.session}: Error parsing - ${err instanceof Error ? err.message : 'Unknown error'}`);
+        errors.push(`Row ${index + 1}: Error parsing - ${err instanceof Error ? err.message : 'Unknown error'}`);
       }
     }
 
@@ -126,10 +141,11 @@ export async function POST(request: Request) {
     const createdMatches = [];
     const creationErrors = [];
 
-    for (const matchData of matchesToCreate) {
+    for (let index = 0; index < matchesToCreate.length; index++) {
+      const matchData = matchesToCreate[index];
       try {
         const scheduledAt = new Date();
-        scheduledAt.setHours(scheduledAt.getHours() + matchData.session); // Stagger by session number
+        scheduledAt.setHours(scheduledAt.getHours() + index); // Stagger by index
 
         const match = await prisma.match.create({
           data: {
@@ -169,7 +185,6 @@ export async function POST(request: Request) {
 
         createdMatches.push({
           id: match.id,
-          session: matchData.session,
           player1: matchData.player1.name,
           player2: matchData.player2.name,
           group1: matchData.player1.groupName,
@@ -177,7 +192,7 @@ export async function POST(request: Request) {
         });
       } catch (err) {
         creationErrors.push(
-          `Session ${matchData.session}: Failed to create - ${err instanceof Error ? err.message : 'Unknown error'}`
+          `Match ${index + 1}: Failed to create - ${err instanceof Error ? err.message : 'Unknown error'}`
         );
       }
     }
