@@ -14,6 +14,8 @@ import {
   Divider,
   Paper,
   Stack,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
 import {
   Add,
@@ -22,6 +24,7 @@ import {
   People,
   Edit,
   CloudUpload,
+  Search,
 } from '@mui/icons-material';
 import AddMatchForm from '@/components/AddMatchForm';
 import AdminPanel from '@/components/AdminPanel';
@@ -81,6 +84,7 @@ export default function DashboardPage() {
   const [selectedTournamentForImport, setSelectedTournamentForImport] = useState<number | null>(null);
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
   const [loading, setLoading] = useState(true);
+  const [playerFilter, setPlayerFilter] = useState('');
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -136,6 +140,16 @@ export default function DashboardPage() {
   const completedMatches = matches
     .filter((m) => m.status === 'COMPLETED')
     .sort((a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime()); // Most recent first
+
+  // Filter scheduled matches by player name
+  const filteredScheduledMatches = scheduledMatches.filter((match) => {
+    if (!playerFilter.trim()) return true;
+    
+    const filterLower = playerFilter.toLowerCase();
+    const playerNames = match.players?.map(p => p.player.name.toLowerCase()) || [];
+    
+    return playerNames.some(name => name.includes(filterLower));
+  });
 
   const formatDate = (date: string | Date) => {
     const d = new Date(date);
@@ -407,20 +421,51 @@ export default function DashboardPage() {
         >
           <Box sx={{ flex: 1 }}>
             <Paper sx={{ p: 3 }}>
-              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-                <CalendarToday />
-                <Typography variant="h6">Scheduled Matches</Typography>
+              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <CalendarToday />
+                  <Typography variant="h6">Scheduled Matches</Typography>
+                </Stack>
+                {scheduledMatches.length > 0 && (
+                  <Chip 
+                    label={`${filteredScheduledMatches.length} of ${scheduledMatches.length}`} 
+                    size="small" 
+                    color="primary"
+                    variant="outlined"
+                  />
+                )}
               </Stack>
+              
+              {scheduledMatches.length > 0 && (
+                <TextField
+                  fullWidth
+                  size="small"
+                  placeholder="Filter by player name..."
+                  value={playerFilter}
+                  onChange={(e) => setPlayerFilter(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Search />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{ mb: 2 }}
+                />
+              )}
+              
               <Divider sx={{ mb: 2 }} />
 
               {scheduledMatches.length === 0 ? (
                 <Typography color="text.secondary">No scheduled matches</Typography>
+              ) : filteredScheduledMatches.length === 0 ? (
+                <Typography color="text.secondary">No matches found for "{playerFilter}"</Typography>
               ) : (
                 <Stack spacing={3}>
                   {/* Group scheduled matches by tournament */}
                   {(() => {
                     // Group scheduled matches by tournament
-                    const grouped = scheduledMatches.reduce((acc, match) => {
+                    const grouped = filteredScheduledMatches.reduce((acc, match) => {
                       const tournamentId = match.tournamentId || 0; // 0 for unranked
                       if (!acc[tournamentId]) {
                         acc[tournamentId] = [];
@@ -440,7 +485,6 @@ export default function DashboardPage() {
                       .sort(([a], [b]) => Number(b) - Number(a)) // Sort by tournament ID desc
                       .map(([tournamentIdStr, tournamentMatches]) => {
                         const tournamentId = Number(tournamentIdStr);
-                        const displayMatches = tournamentMatches.slice(0, 5); // Show max 5 per tournament
 
                         return (
                           <Box key={tournamentId}>
@@ -454,8 +498,27 @@ export default function DashboardPage() {
                                 variant="outlined"
                               />
                             </Stack>
+                            <Box sx={{
+                              maxHeight: '400px',
+                              overflowY: 'auto',
+                              pr: 1,
+                              '&::-webkit-scrollbar': {
+                                width: '6px',
+                              },
+                              '&::-webkit-scrollbar-track': {
+                                backgroundColor: 'action.hover',
+                                borderRadius: '3px',
+                              },
+                              '&::-webkit-scrollbar-thumb': {
+                                backgroundColor: 'primary.main',
+                                borderRadius: '3px',
+                                '&:hover': {
+                                  backgroundColor: 'primary.dark',
+                                },
+                              },
+                            }}>
                             <Stack spacing={1.5}>
-                              {displayMatches.map((match) => {
+                              {tournamentMatches.map((match) => {
                                 // Check if logged-in user is playing in this match
                                 const isUserPlaying = user?.playerId && match.players?.some(
                                   (p) => p.playerId === user.playerId
@@ -552,24 +615,8 @@ export default function DashboardPage() {
                                   </Card>
                                 );
                               })}
-                              {tournamentMatches.length > 5 && (
-                                <Box sx={{ textAlign: 'center', pt: 1 }}>
-                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                                    + {tournamentMatches.length - 5} more matches
-                                  </Typography>
-                                  {tournamentId !== 0 && (
-                                    <Button
-                                      variant="text"
-                                      size="small"
-                                      onClick={() => router.push(`/tournaments?id=${tournamentId}`)}
-                                      sx={{ fontSize: '0.75rem', py: 0.5 }}
-                                    >
-                                      View All in Tournament
-                                    </Button>
-                                  )}
-                                </Box>
-                              )}
                             </Stack>
+                            </Box>
                           </Box>
                         );
                       });
@@ -614,7 +661,6 @@ export default function DashboardPage() {
                       .sort(([a], [b]) => Number(b) - Number(a)) // Sort by tournament ID desc
                       .map(([tournamentIdStr, tournamentMatches]) => {
                         const tournamentId = Number(tournamentIdStr);
-                        const displayMatches = tournamentMatches.slice(0, 5); // Show max 5 per tournament
 
                         return (
                           <Box key={tournamentId}>
@@ -628,8 +674,27 @@ export default function DashboardPage() {
                                 variant="outlined"
                               />
                             </Stack>
+                            <Box sx={{
+                              maxHeight: '400px',
+                              overflowY: 'auto',
+                              pr: 1,
+                              '&::-webkit-scrollbar': {
+                                width: '6px',
+                              },
+                              '&::-webkit-scrollbar-track': {
+                                backgroundColor: 'action.hover',
+                                borderRadius: '3px',
+                              },
+                              '&::-webkit-scrollbar-thumb': {
+                                backgroundColor: 'primary.main',
+                                borderRadius: '3px',
+                                '&:hover': {
+                                  backgroundColor: 'primary.dark',
+                                },
+                              },
+                            }}>
                             <Stack spacing={1.5}>
-                              {displayMatches.map((match) => (
+                              {tournamentMatches.map((match) => (
                                 <Card key={match.id} variant="outlined" sx={{ bgcolor: 'background.default' }}>
                                   <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
                                     <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
@@ -665,24 +730,8 @@ export default function DashboardPage() {
                                   </CardContent>
                                 </Card>
                               ))}
-                              {tournamentMatches.length > 5 && (
-                                <Box sx={{ textAlign: 'center', pt: 1 }}>
-                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                                    + {tournamentMatches.length - 5} more matches
-                                  </Typography>
-                                  {tournamentId !== 0 && (
-                                    <Button
-                                      variant="text"
-                                      size="small"
-                                      onClick={() => router.push(`/tournaments?id=${tournamentId}`)}
-                                      sx={{ fontSize: '0.75rem', py: 0.5 }}
-                                    >
-                                      View All in Tournament
-                                    </Button>
-                                  )}
-                                </Box>
-                              )}
                             </Stack>
+                            </Box>
                           </Box>
                         );
                       });
