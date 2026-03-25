@@ -416,105 +416,152 @@ export default function DashboardPage() {
               {scheduledMatches.length === 0 ? (
                 <Typography color="text.secondary">No scheduled matches</Typography>
               ) : (
-                <Stack spacing={2}>
-                  {scheduledMatches.map((match) => {
-                    // Check if logged-in user is playing in this match
-                    const isUserPlaying = user?.playerId && match.players?.some(
-                      (p) => p.playerId === user.playerId
-                    );
-                    
-                    return (
-                    <Card 
-                      key={match.id} 
-                      variant="outlined"
-                      sx={{
-                        ...(isUserPlaying && {
-                          borderColor: 'primary.main',
-                          borderWidth: 2,
-                          backgroundColor: 'action.hover',
-                        }),
-                      }}
-                    >
-                      <CardContent>
-                        {isUserPlaying && (
-                          <Chip 
-                            label="⭐ Your Match" 
-                            size="small" 
-                            color="primary"
-                            sx={{ mb: 1 }}
-                          />
-                        )}
-                        <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
-                          <Stack direction="row" spacing={0.5}>
-                            <Chip label={match.type} size="small" color="primary" variant="outlined" />
-                            {match.tournamentId ? (
-                              <Chip label="Tournament" size="small" color="warning" variant="outlined" />
-                            ) : (
-                              <Chip label="Unranked" size="small" variant="outlined" />
-                            )}
-                          </Stack>
-                          <Chip
-                            label={match.status}
-                            size="small"
-                            color={getStatusColor(match.status)}
-                          />
-                        </Stack>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                          <Box sx={{ fontWeight: 'bold' }}>
-                            {formatTeamDisplay(match.team1, match.team1Name, match.players, 1, match.group1?.color)}
-                          </Box>
-                          <Typography variant="body1" fontWeight="medium">vs</Typography>
-                          <Box sx={{ fontWeight: 'bold' }}>
-                            {formatTeamDisplay(match.team2, match.team2Name, match.players, 2, match.group2?.color)}
-                          </Box>
-                        </Box>
-                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                          {formatDate(match.scheduledAt)}
-                        </Typography>
-                        {match.notes && (
-                          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                            {match.notes}
-                          </Typography>
-                        )}
-                        <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-                          {user?.isAdmin ? (
-                            <>
-                              <Button
-                                variant="contained"
-                                color="success"
-                                size="small"
-                                onClick={() => router.push(`/match/${match.id}`)}
-                                sx={{ minWidth: 'auto' }}
-                              >
-                                Start Match
-                              </Button>
-                              <Button
+                <Stack spacing={3}>
+                  {/* Group scheduled matches by tournament */}
+                  {(() => {
+                    // Group scheduled matches by tournament
+                    const grouped = scheduledMatches.reduce((acc, match) => {
+                      const tournamentId = match.tournamentId || 0; // 0 for unranked
+                      if (!acc[tournamentId]) {
+                        acc[tournamentId] = [];
+                      }
+                      acc[tournamentId].push(match);
+                      return acc;
+                    }, {} as Record<number, Match[]>);
+
+                    // Get tournament names
+                    const getTournamentName = (tournamentId: number) => {
+                      if (tournamentId === 0) return 'Unranked Matches';
+                      const tournament = tournaments.find(t => t.id === tournamentId);
+                      return tournament?.name || `Tournament ${tournamentId}`;
+                    };
+
+                    return Object.entries(grouped)
+                      .sort(([a], [b]) => Number(b) - Number(a)) // Sort by tournament ID desc
+                      .map(([tournamentIdStr, tournamentMatches]) => {
+                        const tournamentId = Number(tournamentIdStr);
+                        const displayMatches = tournamentMatches.slice(0, 5); // Show max 5 per tournament
+
+                        return (
+                          <Box key={tournamentId}>
+                            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+                              <Typography variant="subtitle2" fontWeight="600" color="primary">
+                                {getTournamentName(tournamentId)}
+                              </Typography>
+                              <Chip 
+                                label={`${tournamentMatches.length} match${tournamentMatches.length !== 1 ? 'es' : ''}`} 
+                                size="small" 
                                 variant="outlined"
-                                color="info"
-                                size="small"
-                                startIcon={<Edit />}
-                                onClick={() => setEditingMatch(match)}
-                                sx={{ minWidth: 'auto' }}
-                              >
-                                Edit
-                              </Button>
-                            </>
-                          ) : (
-                            <Button
-                              variant="outlined"
-                              color="info"
-                              size="small"
-                              onClick={() => router.push(`/match/${match.id}`)}
-                              sx={{ minWidth: 'auto' }}
-                            >
-                              View Details
-                            </Button>
-                          )}
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                    );
-                  })}
+                              />
+                            </Stack>
+                            <Stack spacing={1.5}>
+                              {displayMatches.map((match) => {
+                                // Check if logged-in user is playing in this match
+                                const isUserPlaying = user?.playerId && match.players?.some(
+                                  (p) => p.playerId === user.playerId
+                                );
+                                
+                                return (
+                                  <Card 
+                                    key={match.id} 
+                                    variant="outlined"
+                                    sx={{
+                                      bgcolor: 'background.default',
+                                      ...(isUserPlaying && {
+                                        borderColor: 'primary.main',
+                                        borderWidth: 2,
+                                        backgroundColor: 'action.hover',
+                                      }),
+                                    }}
+                                  >
+                                    <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                                      {isUserPlaying && (
+                                        <Chip 
+                                          label="⭐ Your Match" 
+                                          size="small" 
+                                          color="primary"
+                                          sx={{ mb: 1, height: 20, fontSize: '0.7rem' }}
+                                        />
+                                      )}
+                                      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
+                                        <Stack direction="row" spacing={0.5}>
+                                          <Chip label={match.type} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
+                                          {match.stage && match.stage !== 'GROUP_STAGE' && (
+                                            <Chip 
+                                              label={match.stage.replace('_', ' ')} 
+                                              size="small" 
+                                              color="secondary"
+                                              sx={{ height: 20, fontSize: '0.7rem' }} 
+                                            />
+                                          )}
+                                        </Stack>
+                                        <Typography variant="caption" color="text.secondary">
+                                          {formatDate(match.scheduledAt)}
+                                        </Typography>
+                                      </Stack>
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.5 }}>
+                                        <Box sx={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
+                                          {formatTeamDisplay(match.team1, match.team1Name, match.players, 1, match.group1?.color)}
+                                        </Box>
+                                        <Typography variant="body2" fontWeight="medium">vs</Typography>
+                                        <Box sx={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
+                                          {formatTeamDisplay(match.team2, match.team2Name, match.players, 2, match.group2?.color)}
+                                        </Box>
+                                      </Box>
+                                      {match.notes && (
+                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                                          {match.notes}
+                                        </Typography>
+                                      )}
+                                      <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                                        {user?.isAdmin ? (
+                                          <>
+                                            <Button
+                                              variant="contained"
+                                              color="success"
+                                              size="small"
+                                              onClick={() => router.push(`/match/${match.id}`)}
+                                              sx={{ minWidth: 'auto', py: 0.5, fontSize: '0.75rem' }}
+                                            >
+                                              Start Match
+                                            </Button>
+                                            <Button
+                                              variant="outlined"
+                                              color="info"
+                                              size="small"
+                                              startIcon={<Edit fontSize="small" />}
+                                              onClick={() => setEditingMatch(match)}
+                                              sx={{ minWidth: 'auto', py: 0.5, fontSize: '0.75rem' }}
+                                            >
+                                              Edit
+                                            </Button>
+                                          </>
+                                        ) : (
+                                          <Button
+                                            variant="outlined"
+                                            color="info"
+                                            size="small"
+                                            onClick={() => router.push(`/match/${match.id}`)}
+                                            sx={{ minWidth: 'auto', py: 0.5, fontSize: '0.75rem' }}
+                                          >
+                                            View Details
+                                          </Button>
+                                        )}
+                                      </Stack>
+                                    </CardContent>
+                                  </Card>
+                                );
+                              })}
+                              {tournamentMatches.length > 5 && (
+                                <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', pt: 0.5 }}>
+                                  + {tournamentMatches.length - 5} more matches
+                                </Typography>
+                              )}
+                            </Stack>
+                          </Box>
+                        );
+                      });
+                  })()}
                 </Stack>
               )}
             </Paper>
@@ -531,41 +578,91 @@ export default function DashboardPage() {
               {completedMatches.length === 0 ? (
                 <Typography color="text.secondary">No completed matches</Typography>
               ) : (
-                <Stack spacing={2}>
-                  {completedMatches.slice(0, 10).map((match) => (
-                    <Card key={match.id} variant="outlined">
-                      <CardContent>
-                        <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
-                          <Stack direction="row" spacing={0.5}>
-                            <Chip label={match.type} size="small" variant="outlined" />
-                            {match.tournamentId ? (
-                              <Chip label="Tournament" size="small" color="warning" variant="outlined" />
-                            ) : (
-                              <Chip label="Unranked" size="small" variant="outlined" />
-                            )}
-                          </Stack>
-                          <Chip label="COMPLETED" size="small" color="success" />
-                        </Stack>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                          <Box sx={{ fontWeight: 'bold' }}>
-                            {formatTeamDisplay(match.team1, match.team1Name, match.players, 1, match.group1?.color)}
+                <Stack spacing={3}>
+                  {/* Group matches by tournament */}
+                  {(() => {
+                    // Group completed matches by tournament
+                    const grouped = completedMatches.reduce((acc, match) => {
+                      const tournamentId = match.tournamentId || 0; // 0 for unranked
+                      if (!acc[tournamentId]) {
+                        acc[tournamentId] = [];
+                      }
+                      acc[tournamentId].push(match);
+                      return acc;
+                    }, {} as Record<number, Match[]>);
+
+                    // Get tournament names
+                    const getTournamentName = (tournamentId: number) => {
+                      if (tournamentId === 0) return 'Unranked Matches';
+                      const tournament = tournaments.find(t => t.id === tournamentId);
+                      return tournament?.name || `Tournament ${tournamentId}`;
+                    };
+
+                    return Object.entries(grouped)
+                      .sort(([a], [b]) => Number(b) - Number(a)) // Sort by tournament ID desc
+                      .map(([tournamentIdStr, tournamentMatches]) => {
+                        const tournamentId = Number(tournamentIdStr);
+                        const displayMatches = tournamentMatches.slice(0, 5); // Show max 5 per tournament
+
+                        return (
+                          <Box key={tournamentId}>
+                            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+                              <Typography variant="subtitle2" fontWeight="600" color="primary">
+                                {getTournamentName(tournamentId)}
+                              </Typography>
+                              <Chip 
+                                label={`${tournamentMatches.length} match${tournamentMatches.length !== 1 ? 'es' : ''}`} 
+                                size="small" 
+                                variant="outlined"
+                              />
+                            </Stack>
+                            <Stack spacing={1.5}>
+                              {displayMatches.map((match) => (
+                                <Card key={match.id} variant="outlined" sx={{ bgcolor: 'background.default' }}>
+                                  <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
+                                      <Stack direction="row" spacing={0.5}>
+                                        <Chip label={match.type} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
+                                        {match.stage && match.stage !== 'GROUP_STAGE' && (
+                                          <Chip 
+                                            label={match.stage.replace('_', ' ')} 
+                                            size="small" 
+                                            color="secondary"
+                                            sx={{ height: 20, fontSize: '0.7rem' }} 
+                                          />
+                                        )}
+                                      </Stack>
+                                      <Typography variant="caption" color="text.secondary">
+                                        {formatDate(match.scheduledAt)}
+                                      </Typography>
+                                    </Stack>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.5 }}>
+                                      <Box sx={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
+                                        {formatTeamDisplay(match.team1, match.team1Name, match.players, 1, match.group1?.color)}
+                                      </Box>
+                                      <Typography variant="body2" fontWeight="medium">vs</Typography>
+                                      <Box sx={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
+                                        {formatTeamDisplay(match.team2, match.team2Name, match.players, 2, match.group2?.color)}
+                                      </Box>
+                                    </Box>
+                                    {match.team1Score !== null && match.team2Score !== null && (
+                                      <Typography variant="h6" color="primary" sx={{ fontWeight: 700 }}>
+                                        {match.team1Score} - {match.team2Score}
+                                      </Typography>
+                                    )}
+                                  </CardContent>
+                                </Card>
+                              ))}
+                              {tournamentMatches.length > 5 && (
+                                <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', pt: 0.5 }}>
+                                  + {tournamentMatches.length - 5} more matches
+                                </Typography>
+                              )}
+                            </Stack>
                           </Box>
-                          <Typography variant="body1" fontWeight="medium">vs</Typography>
-                          <Box sx={{ fontWeight: 'bold' }}>
-                            {formatTeamDisplay(match.team2, match.team2Name, match.players, 2, match.group2?.color)}
-                          </Box>
-                        </Box>
-                        {match.team1Score !== null && match.team2Score !== null && (
-                          <Typography variant="h6" color="primary" sx={{ my: 1 }}>
-                            {match.team1Score} - {match.team2Score}
-                          </Typography>
-                        )}
-                        <Typography variant="body2" color="text.secondary">
-                          {formatDate(match.scheduledAt)}
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        );
+                      });
+                  })()}
                 </Stack>
               )}
             </Paper>
