@@ -147,11 +147,13 @@ export default function TournamentStandings({ tournamentId }: TournamentStanding
       ? playersWithMatches.reduce((sum: number, s: PlayerStanding) => sum + s.winRate, 0) / playersWithMatches.length
       : 0;
     
-    // Find top performer by game points (total points scored in actual matches)
+    // Find top performer by tournament points, then wins, then win rate (same as standings ranking)
     const topPlayer = groupData.standings.length > 0 
-      ? [...groupData.standings].sort((a: PlayerStanding, b: PlayerStanding) => 
-          b.totalGamePointsScored - a.totalGamePointsScored
-        )[0]
+      ? [...groupData.standings].sort((a: PlayerStanding, b: PlayerStanding) => {
+          if (b.tournamentPoints !== a.tournamentPoints) return b.tournamentPoints - a.tournamentPoints;
+          if (b.wins !== a.wins) return b.wins - a.wins;
+          return b.winRate - a.winRate;
+        })[0]
       : null;
     
     return {
