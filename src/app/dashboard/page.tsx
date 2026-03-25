@@ -21,10 +21,12 @@ import {
   CalendarToday,
   People,
   Edit,
+  CloudUpload,
 } from '@mui/icons-material';
 import AddMatchForm from '@/components/AddMatchForm';
 import AdminPanel from '@/components/AdminPanel';
 import EditMatchDialog from '@/components/EditMatchDialog';
+import BulkMatchImport from '@/components/BulkMatchImport';
 
 type Match = {
   id: number;
@@ -75,6 +77,8 @@ export default function DashboardPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [showAddMatch, setShowAddMatch] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
+  const [selectedTournamentForImport, setSelectedTournamentForImport] = useState<number | null>(null);
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -205,24 +209,38 @@ export default function DashboardPage() {
   return (
     <Box sx={{ flexGrow: 1, minHeight: '100vh' }}>
       <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-        <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
+        <Stack direction="row" spacing={2} sx={{ mb: 3 }} flexWrap="wrap">
           {user?.isAdmin && (
-            <Button
-              variant="contained"
-              startIcon={<Add />}
-              onClick={() => setShowAddMatch(true)}
-            >
-              Schedule Match
-            </Button>
-          )}
+            <>
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                onClick={() => setShowAddMatch(true)}
+              >
+                Schedule Match
+              </Button>
 
-          {user?.isAdmin && (
-            <Button
-              variant="outlined"
-              onClick={() => setShowAdminPanel(true)}
-            >
-              Admin Panel
-            </Button>
+              {tournaments.length > 0 && (
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  startIcon={<CloudUpload />}
+                  onClick={() => {
+                    setSelectedTournamentForImport(tournaments[0].id);
+                    setShowBulkImport(true);
+                  }}
+                >
+                  Bulk Import Matches
+                </Button>
+              )}
+
+              <Button
+                variant="outlined"
+                onClick={() => setShowAdminPanel(true)}
+              >
+                Admin Panel
+              </Button>
+            </>
           )}
         </Stack>
 
@@ -610,6 +628,23 @@ export default function DashboardPage() {
             fetchData();
             setEditingMatch(null);
           }}
+        />
+      )}
+
+      {showBulkImport && selectedTournamentForImport && (
+        <BulkMatchImport
+          open={showBulkImport}
+          onClose={() => {
+            setShowBulkImport(false);
+            setSelectedTournamentForImport(null);
+          }}
+          onSuccess={() => {
+            fetchData();
+            setShowBulkImport(false);
+            setSelectedTournamentForImport(null);
+          }}
+          tournamentId={selectedTournamentForImport}
+          userId={user?.id || 0}
         />
       )}
     </Box>
