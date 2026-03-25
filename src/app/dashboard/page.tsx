@@ -553,9 +553,21 @@ export default function DashboardPage() {
                                 );
                               })}
                               {tournamentMatches.length > 5 && (
-                                <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', pt: 0.5 }}>
-                                  + {tournamentMatches.length - 5} more matches
-                                </Typography>
+                                <Box sx={{ textAlign: 'center', pt: 1 }}>
+                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                    + {tournamentMatches.length - 5} more matches
+                                  </Typography>
+                                  {tournamentId !== 0 && (
+                                    <Button
+                                      variant="text"
+                                      size="small"
+                                      onClick={() => router.push(`/tournaments?id=${tournamentId}`)}
+                                      sx={{ fontSize: '0.75rem', py: 0.5 }}
+                                    >
+                                      View All in Tournament
+                                    </Button>
+                                  )}
+                                </Box>
                               )}
                             </Stack>
                           </Box>
@@ -654,9 +666,21 @@ export default function DashboardPage() {
                                 </Card>
                               ))}
                               {tournamentMatches.length > 5 && (
-                                <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', pt: 0.5 }}>
-                                  + {tournamentMatches.length - 5} more matches
-                                </Typography>
+                                <Box sx={{ textAlign: 'center', pt: 1 }}>
+                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                    + {tournamentMatches.length - 5} more matches
+                                  </Typography>
+                                  {tournamentId !== 0 && (
+                                    <Button
+                                      variant="text"
+                                      size="small"
+                                      onClick={() => router.push(`/tournaments?id=${tournamentId}`)}
+                                      sx={{ fontSize: '0.75rem', py: 0.5 }}
+                                    >
+                                      View All in Tournament
+                                    </Button>
+                                  )}
+                                </Box>
                               )}
                             </Stack>
                           </Box>
