@@ -111,12 +111,13 @@ export async function GET(request: Request, context: RouteContext) {
         };
       });
 
-      // Sort by tournament points desc, then wins desc, then win rate desc, then point difference desc
+      // Sort by tournament points desc, then wins desc, then win rate desc, then point difference desc, then total game points scored desc
       playerStats.sort((a, b) => {
         if (b.tournamentPoints !== a.tournamentPoints) return b.tournamentPoints - a.tournamentPoints;
         if (b.wins !== a.wins) return b.wins - a.wins;
         if (b.winRate !== a.winRate) return b.winRate - a.winRate;
-        return b.pointDifference - a.pointDifference;
+        if (b.pointDifference !== a.pointDifference) return b.pointDifference - a.pointDifference;
+        return b.totalGamePointsScored - a.totalGamePointsScored;
       });
 
       return {

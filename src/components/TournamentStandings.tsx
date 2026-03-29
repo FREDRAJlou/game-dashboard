@@ -172,13 +172,14 @@ export default function TournamentStandings({ tournamentId }: TournamentStanding
       ? playersWithMatches.reduce((sum: number, s: PlayerStanding) => sum + s.winRate, 0) / playersWithMatches.length
       : 0;
     
-    // Find top performer by tournament points, then wins, then win rate, then point difference (same as standings ranking)
+    // Find top performer by tournament points, then wins, then win rate, then point difference, then game points scored (same as standings ranking)
     const topPlayer = groupData.standings.length > 0 
       ? [...groupData.standings].sort((a: PlayerStanding, b: PlayerStanding) => {
           if (b.tournamentPoints !== a.tournamentPoints) return b.tournamentPoints - a.tournamentPoints;
           if (b.wins !== a.wins) return b.wins - a.wins;
           if (b.winRate !== a.winRate) return b.winRate - a.winRate;
-          return (b.pointDifference || 0) - (a.pointDifference || 0);
+          if ((b.pointDifference || 0) !== (a.pointDifference || 0)) return (b.pointDifference || 0) - (a.pointDifference || 0);
+          return b.totalGamePointsScored - a.totalGamePointsScored;
         })[0]
       : null;
     
@@ -386,6 +387,7 @@ export default function TournamentStandings({ tournamentId }: TournamentStanding
                     <TableCell align="center"><strong>Win %</strong></TableCell>
                     <TableCell align="center"><strong>Pts</strong></TableCell>
                     <TableCell align="center"><strong>Diff</strong></TableCell>
+                    <TableCell align="center"><strong>Scored</strong></TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -448,6 +450,14 @@ export default function TournamentStandings({ tournamentId }: TournamentStanding
                           color={(standing.pointDifference || 0) >= 0 ? 'success.main' : 'error.main'}
                         >
                           {(standing.pointDifference || 0) >= 0 ? '+' : ''}{standing.pointDifference || 0}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="center">
+                        <Typography 
+                          fontSize="0.85rem"
+                          color="text.secondary"
+                        >
+                          {standing.totalGamePointsScored}
                         </Typography>
                       </TableCell>
                     </TableRow>
