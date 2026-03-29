@@ -112,6 +112,10 @@ model Match {
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
   
+  // Custom tournament points for this match (overrides tournament defaults)
+  customPointsForWin  Int?             // If set, overrides tournament.pointsForWin
+  customPointsForLoss Int?             // If set, overrides tournament.pointsForLoss
+  
   tournament       Tournament?          @relation(fields: [tournamentId], references: [id])
   group1           Group?               @relation("MatchGroup1", fields: [group1Id], references: [id])
   group2           Group?               @relation("MatchGroup2", fields: [group2Id], references: [id])

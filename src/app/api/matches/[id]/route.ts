@@ -245,8 +245,10 @@ export async function PATCH(request: Request, context: RouteContext) {
       // If match is completed and has groups, create performance records
       if (status === 'COMPLETED' && match.group1Id && match.group2Id && match.tournament) {
         // Get tournament points configuration
-        const pointsForWin = match.tournament.pointsForWin ?? 3;
-        const pointsForLoss = match.tournament.pointsForLoss ?? 0;
+        // Use custom match points if set, otherwise fall back to tournament defaults
+        const matchWithCustomPoints = match as any; // Type assertion until Prisma is regenerated
+        const pointsForWin = matchWithCustomPoints.customPointsForWin ?? match.tournament.pointsForWin ?? 3;
+        const pointsForLoss = matchWithCustomPoints.customPointsForLoss ?? match.tournament.pointsForLoss ?? 0;
         
         // Count players per team for tournament points division
         const team1Players = match.players.filter(p => p.teamSide === 1).length;

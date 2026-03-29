@@ -16,7 +16,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
 
     const body = await request.json();
-    const { scheduledAt, notes, players } = body;
+    const { scheduledAt, notes, players, customPointsForWin, customPointsForLoss } = body;
 
     // Check if match exists and is editable
     const match = await prisma.match.findUnique({
@@ -82,6 +82,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     const updateData: any = {};
     if (scheduledAt) updateData.scheduledAt = new Date(scheduledAt);
     if (notes !== undefined) updateData.notes = notes;
+    if (customPointsForWin !== undefined) updateData.customPointsForWin = customPointsForWin;
+    if (customPointsForLoss !== undefined) updateData.customPointsForLoss = customPointsForLoss;
 
     // Update match basic info if there's data to update
     if (Object.keys(updateData).length > 0) {

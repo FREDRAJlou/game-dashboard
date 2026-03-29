@@ -61,6 +61,8 @@ export default function EditMatchDialog({
   const [scheduledAt, setScheduledAt] = useState<Date | null>(null);
   const [notes, setNotes] = useState('');
   const [status, setStatus] = useState<'SCHEDULED' | 'IN_PROGRESS' | 'CANCELLED'>('SCHEDULED');
+  const [customPointsForWin, setCustomPointsForWin] = useState<string>('');
+  const [customPointsForLoss, setCustomPointsForLoss] = useState<string>('');
   
   // Player selections
   const [team1Player1, setTeam1Player1] = useState<number>(0);
@@ -144,14 +146,30 @@ export default function EditMatchDialog({
       }
 
       // Update match details
+      const updateData: any = {
+        scheduledAt: scheduledAt.toISOString(),
+        notes: notes.trim() || null,
+        players: playersData,
+      };
+
+      // Add custom points if provided
+      if (customPointsForWin.trim()) {
+        const points = parseInt(customPointsForWin);
+        if (!isNaN(points) && points >= 0) {
+          updateData.customPointsForWin = points;
+        }
+      }
+      if (customPointsForLoss.trim()) {
+        const points = parseInt(customPointsForLoss);
+        if (!isNaN(points) && points >= 0) {
+          updateData.customPointsForLoss = points;
+        }
+      }
+
       const response = await fetch(`/api/matches/${match.id}/edit`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          scheduledAt: scheduledAt.toISOString(),
-          notes: notes.trim() || null,
-          players: playersData,
-        }),
+        body: JSON.stringify(updateData),
       });
 
       if (!response.ok) {
@@ -274,6 +292,40 @@ export default function EditMatchDialog({
                   disabled={loading}
                   placeholder="Add any notes about the match..."
                 />
+
+                <Divider />
+
+                <Typography variant="subtitle2" color="text.secondary">
+                  Custom Tournament Points (Optional)
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Leave empty to use tournament default points. Set custom points for knockout stages.
+                </Typography>
+                
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <TextField
+                    label="Points for Win"
+                    value={customPointsForWin}
+                    onChange={(e) => setCustomPointsForWin(e.target.value)}
+                    type="number"
+                    inputProps={{ min: 0 }}
+                    fullWidth
+                    disabled={loading}
+                    placeholder="Default: 3"
+                    helperText="Points awarded to winner"
+                  />
+                  <TextField
+                    label="Points for Loss"
+                    value={customPointsForLoss}
+                    onChange={(e) => setCustomPointsForLoss(e.target.value)}
+                    type="number"
+                    inputProps={{ min: 0 }}
+                    fullWidth
+                    disabled={loading}
+                    placeholder="Default: 0"
+                    helperText="Points awarded to loser"
+                  />
+                </Box>
 
                 <Divider />
 
