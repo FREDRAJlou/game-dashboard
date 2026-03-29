@@ -67,6 +67,7 @@ export default function AddMatchForm({ onClose, players, currentUserId, tourname
   const [tournamentId, setTournamentId] = useState<number | ''>('');
   const [group1Id, setGroup1Id] = useState<number | ''>('');
   const [group2Id, setGroup2Id] = useState<number | ''>('');
+  const [stage, setStage] = useState<string>('GROUP_STAGE');
   const [groups, setGroups] = useState<Group[]>([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -148,6 +149,7 @@ export default function AddMatchForm({ onClose, players, currentUserId, tourname
           tournamentId: tournamentId || null,
           group1Id: group1Id || null,
           group2Id: group2Id || null,
+          stage: stage || 'GROUP_STAGE',
         }),
       });
 
@@ -319,6 +321,28 @@ export default function AddMatchForm({ onClose, players, currentUserId, tourname
                   Showing {filteredTournaments.length} {matchType.toLowerCase()} tournament{filteredTournaments.length !== 1 ? 's' : ''}
                 </Typography>
               )}
+            </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel>Match Stage</InputLabel>
+              <Select
+                value={stage}
+                label="Match Stage"
+                onChange={(e) => setStage(e.target.value)}
+              >
+                <MenuItem value="GROUP_STAGE">Group Stage</MenuItem>
+                <MenuItem value="ROUND_OF_16">Round of 16</MenuItem>
+                <MenuItem value="QUARTER_FINAL">Quarter Final</MenuItem>
+                <MenuItem value="SEMI_FINAL">Semi Final</MenuItem>
+                <MenuItem value="THIRD_PLACE">3rd Place Playoff</MenuItem>
+                <MenuItem value="FINAL">Final</MenuItem>
+                <MenuItem value="ELIMINATOR">Eliminator</MenuItem>
+                <MenuItem value="QUALIFIER_1">Qualifier 1</MenuItem>
+                <MenuItem value="QUALIFIER_2">Qualifier 2</MenuItem>
+              </Select>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                {stage === 'GROUP_STAGE' ? 'League/round-robin matches' : 'Knockout/playoff match'}
+              </Typography>
             </FormControl>
 
             {tournamentId && loadingGroups && (

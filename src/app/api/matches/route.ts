@@ -96,6 +96,7 @@ export async function POST(request: Request) {
       tournamentId,
       group1Id,
       group2Id,
+      stage = 'GROUP_STAGE',
     } = body;
 
     if (!scheduledAt || !type || !scheduledById) {
@@ -190,6 +191,7 @@ export async function POST(request: Request) {
         scheduledAt: new Date(scheduledAt),
         type: normalizedType,
         status,
+        stage: stage as any, // Type assertion until Prisma is regenerated
         team1Score: team1Score ?? null,
         team2Score: team2Score ?? null,
         winnerTeam: winnerTeam ?? null,

@@ -23,10 +23,15 @@ enum MatchStatus {
 }
 
 enum MatchStage {
-  GROUP_STAGE
-  QUARTER_FINAL
-  SEMI_FINAL
-  FINAL
+  GROUP_STAGE        // League/round-robin matches within groups
+  ROUND_OF_16        // Pre-quarter (16 teams)
+  QUARTER_FINAL      // Quarter-finals (8 teams)
+  SEMI_FINAL         // Semi-finals (4 teams)
+  THIRD_PLACE        // 3rd place playoff
+  FINAL              // Championship final
+  ELIMINATOR         // Eliminator round (IPL-style)
+  QUALIFIER_1        // 1st Qualifier (IPL-style: 1st vs 2nd)
+  QUALIFIER_2        // 2nd Qualifier (IPL-style: loser Q1 vs winner E)
 }
 
 enum TournamentStatus {
