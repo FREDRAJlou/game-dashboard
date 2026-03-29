@@ -116,7 +116,7 @@ export async function GET(
       });
     });
 
-    // Convert to array and sort by tournament points, then wins, then win rate, then points scored
+    // Convert to array and sort by tournament points, then wins, then win rate, then point difference
     const standings = Array.from(playerStats.values())
       .sort((a, b) => {
         if (b.tournamentPoints !== a.tournamentPoints) return b.tournamentPoints - a.tournamentPoints;
@@ -124,7 +124,10 @@ export async function GET(
         const aWinRate = a.matches > 0 ? (a.wins / a.matches) : 0;
         const bWinRate = b.matches > 0 ? (b.wins / b.matches) : 0;
         if (bWinRate !== aWinRate) return bWinRate - aWinRate;
-        return b.pointsScored - a.pointsScored;
+        // Use point difference instead of just points scored
+        const aPointDiff = a.pointsScored - a.pointsConceded;
+        const bPointDiff = b.pointsScored - b.pointsConceded;
+        return bPointDiff - aPointDiff;
       });
 
     // Calculate group statistics

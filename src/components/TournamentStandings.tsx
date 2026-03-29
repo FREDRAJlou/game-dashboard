@@ -40,7 +40,9 @@ interface PlayerStanding {
   losses: number;
   winRate: number;
   tournamentPoints: number;       // Points for standings (e.g., 3 for win, 0 for loss)
-  totalGamePointsScored: number;  // Actual game points scored in matches (renamed)
+  totalGamePointsScored: number;  // Actual game points scored in matches
+  totalGamePointsConceded?: number; // Actual game points conceded
+  pointDifference?: number;       // Net point difference (scored - conceded)
 }
 
 interface GroupStanding {
@@ -170,13 +172,13 @@ export default function TournamentStandings({ tournamentId }: TournamentStanding
       ? playersWithMatches.reduce((sum: number, s: PlayerStanding) => sum + s.winRate, 0) / playersWithMatches.length
       : 0;
     
-    // Find top performer by tournament points, then wins, then win rate, then game points scored (same as standings ranking)
+    // Find top performer by tournament points, then wins, then win rate, then point difference (same as standings ranking)
     const topPlayer = groupData.standings.length > 0 
       ? [...groupData.standings].sort((a: PlayerStanding, b: PlayerStanding) => {
           if (b.tournamentPoints !== a.tournamentPoints) return b.tournamentPoints - a.tournamentPoints;
           if (b.wins !== a.wins) return b.wins - a.wins;
           if (b.winRate !== a.winRate) return b.winRate - a.winRate;
-          return b.totalGamePointsScored - a.totalGamePointsScored;
+          return (b.pointDifference || 0) - (a.pointDifference || 0);
         })[0]
       : null;
     
@@ -383,7 +385,7 @@ export default function TournamentStandings({ tournamentId }: TournamentStanding
                     <TableCell align="center"><strong>L</strong></TableCell>
                     <TableCell align="center"><strong>Win %</strong></TableCell>
                     <TableCell align="center"><strong>Pts</strong></TableCell>
-                    <TableCell align="center"><strong>Score</strong></TableCell>
+                    <TableCell align="center"><strong>Diff</strong></TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -441,10 +443,11 @@ export default function TournamentStandings({ tournamentId }: TournamentStanding
                       </TableCell>
                       <TableCell align="center">
                         <Typography 
-                          fontSize="0.9rem"
-                          color="text.secondary"
+                          fontSize="0.95rem"
+                          fontWeight="medium"
+                          color={(standing.pointDifference || 0) >= 0 ? 'success.main' : 'error.main'}
                         >
-                          {standing.totalGamePointsScored}
+                          {(standing.pointDifference || 0) >= 0 ? '+' : ''}{standing.pointDifference || 0}
                         </Typography>
                       </TableCell>
                     </TableRow>

@@ -84,6 +84,20 @@ export async function GET(request: Request, context: RouteContext) {
           0
         );
 
+        // Calculate points conceded (opponent's score)
+        let totalGamePointsConceded = 0;
+        playerPerformances.forEach((perf) => {
+          const match = tournament.matches.find(m => m.id === perf.matchId);
+          if (match) {
+            // Get opponent's team score
+            const opponentScore = perf.teamSide === 1 ? (match.team2Score || 0) : (match.team1Score || 0);
+            totalGamePointsConceded += opponentScore;
+          }
+        });
+
+        // Calculate point difference (like NRR in cricket)
+        const pointDifference = totalGamePointsScored - totalGamePointsConceded;
+
         return {
           player: member.player,
           matchesPlayed: matchesPlayed,
@@ -92,15 +106,17 @@ export async function GET(request: Request, context: RouteContext) {
           winRate: matchesPlayed > 0 ? (wins / matchesPlayed) * 100 : 0,
           tournamentPoints,          // Points for standings (e.g., 3 for win, 0 for loss)
           totalGamePointsScored,     // Actual game points scored in matches
+          totalGamePointsConceded,   // Actual game points conceded
+          pointDifference,           // Net point difference (scored - conceded)
         };
       });
 
-      // Sort by tournament points desc, then wins desc, then win rate desc, then total game points scored desc
+      // Sort by tournament points desc, then wins desc, then win rate desc, then point difference desc
       playerStats.sort((a, b) => {
         if (b.tournamentPoints !== a.tournamentPoints) return b.tournamentPoints - a.tournamentPoints;
         if (b.wins !== a.wins) return b.wins - a.wins;
         if (b.winRate !== a.winRate) return b.winRate - a.winRate;
-        return b.totalGamePointsScored - a.totalGamePointsScored;
+        return b.pointDifference - a.pointDifference;
       });
 
       return {
