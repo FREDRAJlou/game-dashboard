@@ -69,10 +69,33 @@ export default function TournamentStandings({ tournamentId }: TournamentStanding
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [matches, setMatches] = useState<any[]>([]);
   const [matchesLoading, setMatchesLoading] = useState(true);
+  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     fetchStandings();
   }, [tournamentId]);
+
+  useEffect(() => {
+    // Create audio context for victory/champion sound
+    const audioElement = new Audio('/sounds/victory.mp3');
+    audioElement.volume = 0.3; // Set volume to 30%
+    setAudio(audioElement);
+
+    return () => {
+      // Cleanup audio on unmount
+      if (audioElement) {
+        audioElement.pause();
+        audioElement.currentTime = 0;
+      }
+    };
+  }, []);
+
+  const playVictorySound = () => {
+    if (audio) {
+      audio.currentTime = 0; // Reset to start
+      audio.play().catch(err => console.log('Audio play failed:', err));
+    }
+  };
 
   useEffect(() => {
     const fetchMatches = async () => {
@@ -245,13 +268,31 @@ export default function TournamentStandings({ tournamentId }: TournamentStanding
                   {groupLeaderboard.map((group: any, index: number) => (
                     <TableRow
                       key={group.group.id}
+                      onMouseEnter={() => {
+                        if (index === 0 && group.totalMatches > 0) {
+                          playVictorySound();
+                        }
+                      }}
                       sx={{
-                        '&:hover': { backgroundColor: 'action.hover' },
                         backgroundColor: index === 0 && group.totalMatches > 0
                           ? (theme: any) => theme.palette.mode === 'dark'
                             ? 'rgba(76, 175, 80, 0.1)'
                             : 'rgba(76, 175, 80, 0.05)'
                           : 'inherit',
+                        transition: 'all 0.3s ease',
+                        cursor: index === 0 && group.totalMatches > 0 ? 'pointer' : 'default',
+                        '&:hover': {
+                          backgroundColor: index === 0 && group.totalMatches > 0
+                            ? 'rgba(255, 215, 0, 0.2)'
+                            : 'action.hover',
+                          transform: index === 0 && group.totalMatches > 0 ? 'scale(1.02)' : 'none',
+                          boxShadow: index === 0 && group.totalMatches > 0
+                            ? '0 0 20px rgba(255, 215, 0, 0.4), 0 0 40px rgba(255, 215, 0, 0.2)'
+                            : 'none',
+                          '& .trophy-icon': {
+                            transform: index === 0 && group.totalMatches > 0 ? 'rotate(360deg) scale(1.3)' : 'none',
+                          },
+                        },
                       }}
                     >
                       <TableCell sx={{ fontWeight: 600 }}>{index + 1}</TableCell>
@@ -269,7 +310,13 @@ export default function TournamentStandings({ tournamentId }: TournamentStanding
                           <Chip 
                             label="🏆" 
                             size="small" 
-                            sx={{ ml: 1, height: 20, fontSize: '0.7rem' }}
+                            className="trophy-icon"
+                            sx={{ 
+                              ml: 1, 
+                              height: 20, 
+                              fontSize: '0.7rem',
+                              transition: 'transform 0.6s ease',
+                            }}
                           />
                         )}
                       </TableCell>
