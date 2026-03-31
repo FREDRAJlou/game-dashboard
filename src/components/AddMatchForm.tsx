@@ -68,6 +68,8 @@ export default function AddMatchForm({ onClose, players, currentUserId, tourname
   const [group1Id, setGroup1Id] = useState<number | ''>('');
   const [group2Id, setGroup2Id] = useState<number | ''>('');
   const [stage, setStage] = useState<string>('GROUP_STAGE');
+  const [customPointsForWin, setCustomPointsForWin] = useState<number | ''>('');
+  const [customPointsForLoss, setCustomPointsForLoss] = useState<number | ''>('');
   const [groups, setGroups] = useState<Group[]>([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -150,6 +152,8 @@ export default function AddMatchForm({ onClose, players, currentUserId, tourname
           group1Id: group1Id || null,
           group2Id: group2Id || null,
           stage: stage || 'GROUP_STAGE',
+          customPointsForWin: customPointsForWin || null,
+          customPointsForLoss: customPointsForLoss || null,
         }),
       });
 
@@ -344,6 +348,38 @@ export default function AddMatchForm({ onClose, players, currentUserId, tourname
                 {stage === 'GROUP_STAGE' ? 'League/round-robin matches' : 'Knockout/playoff match'}
               </Typography>
             </FormControl>
+
+            {/* Custom Points for Non-Group Stage Matches */}
+            {stage !== 'GROUP_STAGE' && (
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <TextField
+                  label="Points for Win (Optional)"
+                  type="number"
+                  value={customPointsForWin}
+                  onChange={(e) => setCustomPointsForWin(e.target.value ? parseInt(e.target.value) : '')}
+                  fullWidth
+                  helperText="Override tournament default points for winning this match"
+                  inputProps={{ min: 0 }}
+                />
+                <TextField
+                  label="Points for Loss (Optional)"
+                  type="number"
+                  value={customPointsForLoss}
+                  onChange={(e) => setCustomPointsForLoss(e.target.value ? parseInt(e.target.value) : '')}
+                  fullWidth
+                  helperText="Override tournament default points for losing this match"
+                  inputProps={{ min: 0 }}
+                />
+              </Box>
+            )}
+
+            {stage !== 'GROUP_STAGE' && customPointsForWin === '' && customPointsForLoss === '' && tournamentId && (
+              <Alert severity="info">
+                <Typography variant="caption">
+                  If not specified, tournament default points will be used (check tournament settings).
+                </Typography>
+              </Alert>
+            )}
 
             {tournamentId && loadingGroups && (
               <Alert severity="info" sx={{ mt: 1 }}>

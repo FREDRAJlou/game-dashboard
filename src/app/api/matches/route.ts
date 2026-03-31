@@ -97,6 +97,8 @@ export async function POST(request: Request) {
       group1Id,
       group2Id,
       stage = 'GROUP_STAGE',
+      customPointsForWin,
+      customPointsForLoss,
     } = body;
 
     if (!scheduledAt || !type || !scheduledById) {
@@ -202,6 +204,8 @@ export async function POST(request: Request) {
         group2Id: group2Id ?? null,
         team1Id,
         team2Id,
+        customPointsForWin: customPointsForWin ?? null,
+        customPointsForLoss: customPointsForLoss ?? null,
         players: {
           create: [
             ...team1PlayerIds.map((playerId: number, index: number) => ({
