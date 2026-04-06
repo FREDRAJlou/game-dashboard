@@ -272,11 +272,11 @@ export default function TournamentsPage() {
                       />
                     </Typography>
                     <Typography variant="body2">
-                      <strong>Start:</strong> {new Date(tournament.startDate).toLocaleDateString()}
+                      <strong>Start:</strong> {new Date(tournament.startDate).toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata' })}
                     </Typography>
                     {tournament.endDate && (
                       <Typography variant="body2">
-                        <strong>End:</strong> {new Date(tournament.endDate).toLocaleDateString()}
+                        <strong>End:</strong> {new Date(tournament.endDate).toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata' })}
                       </Typography>
                     )}
                     <Typography variant="body2">

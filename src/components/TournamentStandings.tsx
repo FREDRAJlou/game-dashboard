@@ -599,8 +599,9 @@ export default function TournamentStandings({ tournamentId }: TournamentStanding
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary">
                                   {new Date(match.scheduledAt).toLocaleDateString('en-US', { 
-                                    month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' 
-                                  })}
+                                    month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit',
+                                    timeZone: 'Asia/Kolkata'
+                                  })} IST
                                 </Typography>
                               </Stack>
                             </CardContent>
@@ -635,7 +636,8 @@ export default function TournamentStandings({ tournamentId }: TournamentStanding
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary">
                                   {new Date(match.scheduledAt).toLocaleDateString('en-US', { 
-                                    month: 'short', day: 'numeric', year: 'numeric'
+                                    month: 'short', day: 'numeric', year: 'numeric',
+                                    timeZone: 'Asia/Kolkata'
                                   })}
                                 </Typography>
                               </Stack>

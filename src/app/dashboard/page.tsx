@@ -153,16 +153,18 @@ export default function DashboardPage() {
 
   const formatDate = (date: string | Date) => {
     const d = new Date(date);
-    // Use UTC time to avoid timezone conversion
-    const month = d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
-    const day = d.getUTCDate();
-    const year = d.getUTCFullYear();
-    const hours = d.getUTCHours();
-    const minutes = d.getUTCMinutes().toString().padStart(2, '0');
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    const displayHours = hours % 12 || 12;
+    // Use IST timezone (Asia/Kolkata)
+    const month = d.toLocaleString('en-US', { month: 'short', timeZone: 'Asia/Kolkata' });
+    const day = d.toLocaleString('en-US', { day: 'numeric', timeZone: 'Asia/Kolkata' });
+    const year = d.toLocaleString('en-US', { year: 'numeric', timeZone: 'Asia/Kolkata' });
+    const time = d.toLocaleString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit', 
+      hour12: true, 
+      timeZone: 'Asia/Kolkata' 
+    });
     
-    return `${month} ${day}, ${year} ${displayHours}:${minutes} ${ampm} UTC`;
+    return `${month} ${day}, ${year} ${time} IST`;
   };
 
   const getStatusColor = (status: string): "default" | "primary" | "success" | "error" | "warning" => {

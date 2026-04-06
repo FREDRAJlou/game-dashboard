@@ -131,8 +131,8 @@ export default function TournamentLeaderboard({ tournamentId }: TournamentLeader
               {data.tournament.name}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {new Date(data.tournament.startDate).toLocaleDateString()}
-              {data.tournament.endDate && ` - ${new Date(data.tournament.endDate).toLocaleDateString()}`}
+              {new Date(data.tournament.startDate).toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata' })}
+              {data.tournament.endDate && ` - ${new Date(data.tournament.endDate).toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata' })}`}
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
